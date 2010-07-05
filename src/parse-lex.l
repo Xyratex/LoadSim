@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "y.tab.h"
+#include "parse-gram.h"
 %}
 
 BLANK           [ \t]
@@ -92,7 +92,7 @@ ID		{alpha}({alpha}|{digit})+
 {ID}		{ yylval.strval = strdup(yytext); return TOK_ID; }
 {IP}		{ yylval.strval = strdup(yytext); return TOK_IP; }
 
-{digit}		{ yylval.intval = atoi(yytext); return TOK_NUMBER; }
+{digit}+	{ yylval.intval = atoi(yytext); return TOK_NUMBER; }
 {STRING}	{ yylval.strval = yytext; return STRING; }
 
 .		return yytext[0];

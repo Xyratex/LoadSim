@@ -48,9 +48,8 @@
 /depcomp
 /INSTALL
 /install-sh
-/lustre.spec
-/lustre*.tar.gz
-/Makefile
+Makefile
+Makefile.in
 /missing
 /mkinstalldirs
 /Module.markers
@@ -62,6 +61,7 @@
 /Rules
 /series
 /stamp-h1
+ylwrap
 
 #
 # Top level generic files

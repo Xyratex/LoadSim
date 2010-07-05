@@ -12,11 +12,6 @@ int yywrap()
 	return 1;
 }
 
-main()
-{
-	yyparse();
-}
-
 %}
 
 %union {

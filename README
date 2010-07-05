@@ -1,0 +1,17 @@
+to build project you need run 
+
+autogen.sh
+
+and run configure.
+
+after configure finished, run make and see results in src/ directory.
+
+
+to see some debug output and verify parser work need to run
+
+cat ../tests/test.conf | ./mdsim
+
+expected output
+
+loop counter 5
+server MDS0
