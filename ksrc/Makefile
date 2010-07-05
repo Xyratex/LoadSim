@@ -1,12 +1,12 @@
 ifneq ($(KERNELRELEASE),)
-    obj-m	:= lve.o
-    lve-objs	:= light_ve.o lve-mod.o tags.o lve_procfs.o lve_list.o
+    obj-m	:= mdsim.o
+    mdsim-objs	:= fifo.o vm_main.o vm_call.o vm_math.o mdsimul.o
 else
-    KDIR        := /lib/modules/2.6.18-128.2.1.el5.028stab064.8-lve/build
+    KDIR        := 
     PWD         := $(shell pwd)
 
 debug:
-	$(MAKE) -C $(KDIR) SUBDIRS=$(PWD) EXTRA_CFLAGS="-DLVE_DEBUG=1 -g" modules 
+	$(MAKE) -C $(KDIR) SUBDIRS=$(PWD) EXTRA_CFLAGS="-g" modules 
 
 default: 
 	$(MAKE) -C $(KDIR) SUBDIRS=$(PWD) modules 
