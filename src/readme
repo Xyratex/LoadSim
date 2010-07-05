@@ -1,0 +1,8 @@
+to see some debug output and verify parser work need to run
+
+cat ../tests/test.conf | ./mdsim
+
+expected output
+
+loop counter 5
+server MDS0
