@@ -333,7 +333,7 @@ close_cmd:
   "name" quoted file name
  */
 stat_cmd:
-	TOW_STAT_CMD quoted_name
+	TOK_STAT_CMD quoted_name
 	{
 		free($2);
 	}
