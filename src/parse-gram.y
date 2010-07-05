@@ -55,7 +55,7 @@ main_command:
  define server settings
  
  server mds-id nid
- whre is
+ where is
  'server' is reserved word
  'mds-id' is server uuid
  'nid' is network address to connect
@@ -93,7 +93,7 @@ client_set:
 
  example
  
- proceduce $test-name
+ procedure $test-name
   .. some operations ..
  endproc
 
@@ -124,7 +124,7 @@ proc_body:
  groups commands used in procedure
  - metadata operations
  - loop
- - syncronization and other not related to MD commands
+ - synchronization and other not related to MD commands
  */
 proc_commands:
 	  md_ops
@@ -164,7 +164,7 @@ loop_end:
 /**
  group of misc operations.
  now it
-  - syncronization between threads, that is wait_race.
+  - synchronization between threads, that is wait_race.
   - delay execution for some time
 */
 misc_ops:
@@ -173,7 +173,7 @@ misc_ops:
 	;
 
 /**
- syncronize executions between two clients
+ synchronize executions between two clients
 
  wait_race $number
  where is $number is some identifier 
@@ -193,17 +193,17 @@ sleep:
 	;
 
 /**
- format of metadata operatoin
+ format of metadata operating
  
  $md_operation 'expected' [OK|FAIL]
  where is 
  $md_operation is one of metadata specific operations.
  'expected' is reserved word
- OK - operation want to be finished successfuly
+ OK - operation want to be finished successfully
  FAIL - operation is wait to be finished with errro
  
  if operation finished with unexpected result, execution finished 
- and error code retured to application.
+ and error code returned to application.
  */
 md_ops:
 	md_cmd expected
@@ -329,11 +329,11 @@ close_cmd:
 
  stat "name"
  
- whereis 
+ where is 
   "name" quoted file name
  */
 stat_cmd:
-	TOK_STAT_CMD quoted_name
+	TOW_STAT_CMD quoted_name
 	{
 		free($2);
 	}
@@ -344,7 +344,7 @@ stat_cmd:
  format of operation
  
  setattr "name" mode
- whereis 
+ where is 
   "name" quoted file name
    mode is numberic value of file mode bits
  */
