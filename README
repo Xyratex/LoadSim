@@ -1,17 +1,24 @@
-to build project you need run 
+To build the project please run the following:
 
-autogen.sh
+./autogen.sh && ./configure && make 
 
-and run configure.
+The built program "mdsim" is created in "src" directory. You can test it with
+example load configuration. To do so run the following:
 
-after configure finished, run make and see results in src/ directory.
+cat ./tests/test.conf | ./src/mdsim
 
-
-to see some debug output and verify parser work need to run
-
-cat ../tests/test.conf | ./mdsim
-
-expected output
+It prints out some diagnostic output, which is expected to be as follows:
 
 loop counter 5
 server MDS0
+
+It parses the loop described in test.conf and runs the load on described
+MDS0 server. This is not much but some working piece of parser. We will add
+more later.
+
+Todo:
+
+1. Make syntax of load config less "heavy" and pascal like;
+2. More constructions to create more sophisticated loads;
+3. More text UI in mdsim.
+
