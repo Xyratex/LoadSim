@@ -39,7 +39,7 @@ int yywrap()
 %token TOK_SERVER TOK_CLIENT
 
 %type<strval> literal quoted_name
-%type<intval> expected
+%type<intval> expected open_flags
 
 %%
 main_commands:
@@ -312,12 +312,18 @@ unlink_cmd:
 open_cmd:
 	TOK_OPEN_CMD quoted_name open_flags TOK_NUMBER
 	{
+		encode_open(NULL, $2, $3, $4);
 		free($2);
 	}
 	;
 
 
 open_flags:
+	literal
+	{
+		/** verify */
+		$$ = $1;
+	}
 	;
 
 /**
@@ -331,6 +337,9 @@ open_flags:
 */ 
 close_cmd:
 	TOK_CLOSE_CMD TOK_NUMBER
+	{
+		encode_close(NULL, $2);
+	}
 	;
 
 /**
@@ -345,6 +354,7 @@ close_cmd:
 stat_cmd:
 	TOK_STAT_CMD quoted_name
 	{
+		encode_stat(NULL, $2);
 		free($2);
 	}
 	;
@@ -361,6 +371,7 @@ stat_cmd:
 setattr_cmd:
 	TOK_SETATTR_CMD quoted_name TOK_NUMBER
 	{
+		encode_setattr(NULL, $2, $3);
 		free($2);
 	}
 	;
@@ -374,6 +385,7 @@ setattr_cmd:
 mksln_cmd:
 	TOK_SOFTLINK_CMD quoted_name quoted_name
 	{
+		encode_softlink(NULL, $2, $3);
 		free($2);
 		free($3);
 	}
@@ -388,6 +400,7 @@ mksln_cmd:
 mkhln_cmd:
 	TOK_HARDLINK_CMD quoted_name quoted_name
 	{
+		encode_hardlink(NULL, $2, $3);
 		free($2);
 		free($3);
 	}
@@ -402,6 +415,7 @@ mkhln_cmd:
 readln_cmd:
 	TOK_READLINK_CMD quoted_name
 	{
+		encode_readlink(NULL, $2);
 		free($2);
 	}
 	;

@@ -14,7 +14,7 @@ enum cmd_base {
 	VM_CMD_CALL,
 	/* goto, address on top of stack */
 	VM_CMD_GOTO,
-	/* conditional jump, data is stay on stack. */
+	/* conditional jump, results on top of stack */
 	VM_CMD_JZ,
 	/* compare two operands on stack, result put on stack*/
 	VM_CMD_IF,

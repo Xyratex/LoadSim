@@ -36,8 +36,15 @@ int encode_mkdir(struct vm_program *vprg,char *dir)
 int encode_readdir(struct vm_program *vprg,char *dir)
 {
 	int ret;
+	union cmd_arg arg;
 
-	return ret;
+	arg.cd_string = dir;
+	ret = vm_encode(vprg, VM_CMD_PUSHS, arg);
+	if (ret)
+		return ret;
+
+	arg.cd_call = VM_CALL_READIR;
+	return vm_encode(vprg, VM_CMD_CALL, arg);
 }
 
 int encode_unlink(struct vm_program *vprg, char *name)
@@ -54,53 +61,133 @@ int encode_unlink(struct vm_program *vprg, char *name)
 	return vm_encode(vprg, VM_CMD_CALL, arg);
 }
 
+/**
+ pushl reg
+ pushl flags
+ pushs name
+ call [open]
+ */
 int encode_open(struct vm_program *vprg, char *name, int flags, int reg)
 {
 	int ret;
+	union cmd_arg arg;
 
-	return ret;
+	arg.cd_long = reg;
+	ret = vm_encode(vprg, VM_CMD_PUSHL, arg);
+	if (ret)
+		return ret;
+
+	arg.cd_long = flags;
+	ret = vm_encode(vprg, VM_CMD_PUSHL, arg);
+	if (ret)
+		return ret;
+
+	arg.cd_string = name;
+	ret = vm_encode(vprg, VM_CMD_PUSHS, arg);
+	if (ret)
+		return ret;
+
+	arg.cd_call = VM_CALL_OPEN;
+	return vm_encode(vprg, VM_CMD_CALL, arg);
 }
 
 int encode_close(struct vm_program *vprg, int reg)
 {
 	int ret;
+	union cmd_arg arg;
 
-	return ret;
+	arg.cd_long = reg;
+	ret = vm_encode(vprg, VM_CMD_PUSHL, arg);
+	if (ret)
+		return ret;
+
+	arg.cd_call = VM_CALL_CLOSE;
+	return vm_encode(vprg, VM_CMD_CALL, arg);
 }
 
-int encode_stat(struct vm_program *vprg, char *file)
+int encode_stat(struct vm_program *vprg, char *name)
 {
 	int ret;
+	union cmd_arg arg;
 
-	return ret;
+	arg.cd_string = name;
+	ret = vm_encode(vprg, VM_CMD_PUSHS, arg);
+	if (ret)
+		return ret;
+
+	arg.cd_call = VM_CALL_STAT;
+	return vm_encode(vprg, VM_CMD_CALL, arg);
 }
 
 int encode_setattr(struct vm_program *vprg, char *name, int flags)
 {
 	int ret;
+	union cmd_arg arg;
 
-	return ret;
+	arg.cd_string = name;
+	ret = vm_encode(vprg, VM_CMD_PUSHS, arg);
+	if (ret)
+		return ret;
+
+	arg.cd_long = flags;
+	ret = vm_encode(vprg, VM_CMD_PUSHL, arg);
+	if (ret)
+		return ret;
+
+	arg.cd_call = VM_CALL_SETATTR;
+	return vm_encode(vprg, VM_CMD_CALL, arg);
 }
 
 int encode_softlink(struct vm_program *vprg, char *old, char *new)
 {
 	int ret;
+	union cmd_arg arg;
 
-	return ret;
+	arg.cd_string = old;
+	ret = vm_encode(vprg, VM_CMD_PUSHS, arg);
+	if (ret)
+		return ret;
+
+	arg.cd_string = new;
+	ret = vm_encode(vprg, VM_CMD_PUSHS, arg);
+	if (ret)
+		return ret;
+
+	arg.cd_call = VM_CALL_SOFTLINK;
+	return vm_encode(vprg, VM_CMD_CALL, arg);
 }
 
 int encode_hardlink(struct vm_program *vprg, char *old, char *new)
 {
 	int ret;
+	union cmd_arg arg;
 
-	return ret;
+	arg.cd_string = old;
+	ret = vm_encode(vprg, VM_CMD_PUSHS, arg);
+	if (ret)
+		return ret;
+
+	arg.cd_string = new;
+	ret = vm_encode(vprg, VM_CMD_PUSHS, arg);
+	if (ret)
+		return ret;
+
+	arg.cd_call = VM_CALL_SOFTLINK;
+	return vm_encode(vprg, VM_CMD_CALL, arg);
 }
 
 int encode_readlink(struct vm_program *vprg,char *name)
 {
 	int ret;
+	union cmd_arg arg;
 
-	return ret;
+	arg.cd_string = name;
+	ret = vm_encode(vprg, VM_CMD_PUSHS, arg);
+	if (ret)
+		return ret;
+
+	arg.cd_call = VM_CALL_READLINK;
+	return vm_encode(vprg, VM_CMD_CALL, arg);
 }
 
 /****/
