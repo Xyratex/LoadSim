@@ -14,13 +14,33 @@ enum cmd_base {
 	VM_CMD_CALL,
 	/* goto, address on top of stack */
 	VM_CMD_GOTO,
-	/* conditional jump */
+	/* conditional jump, data is stay on stack. */
+	VM_CMD_JZ,
+	/* compare two operands on stack, result put on stack*/
 	VM_CMD_IF,
 	/* */
 	VM_CMD_ADD,
 	/* */
 	VM_CMD_SUB,
-	VM_CMD_MAX
+	VM_CMD_MAX,
+};
+
+/**
+ procedures called via VM_CMD_CALL function
+ */
+enum vm_calls {
+	VM_CALL_CD,
+	VM_CALL_MKDIR,
+	VM_CALL_READIR,
+	VM_CALL_UNLINK,
+	VM_CALL_OPEN,
+	VM_CALL_CLOSE,
+	VM_CALL_STAT,
+	VM_CALL_SETATTR,
+	VM_CALL_SOFTLINK,
+	VM_CALL_HARDLINK,
+	VM_CALL_READLINK,
+	VM_CALL_MAX,
 };
 
 #endif

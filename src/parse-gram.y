@@ -1,6 +1,7 @@
 %{
 #include <stdio.h>
 #include <string.h>
+#include "encode.h"
 
 void yyerror(const char *str)
 {
@@ -63,10 +64,8 @@ main_command:
 server_set:
 	TOK_SERVER TOK_ID TOK_NID
 	{
-		printf("server %s\n", $2);
 		free($2);
 		free($3);
-
 	}
 	;
 
@@ -106,6 +105,7 @@ procedure:
 proc_begin:
 	TOK_PROC_BEGIN TOK_ID 
 	{
+		vm_label_resolve(NULL, START_LABEL);
 		free($2);
 	}
 	;
@@ -113,6 +113,7 @@ proc_begin:
 proc_end:
 	TOK_PROC_END
 	{
+		vm_label_resolve(NULL, END_LABEL);
 	}
 	;
 
@@ -147,7 +148,10 @@ loop:
 	;
 
 loop_begin:
-	TOK_LOOP_BEGIN
+	TOK_LOOP_BEGIN TOK_NUMBER
+	{
+		encode_loop_start(NULL, $2);
+	}
 	;
 
 loop_body:
@@ -155,9 +159,9 @@ loop_body:
 	;
 
 loop_end:
-	TOK_LOOP_END TOK_NUMBER
+	TOK_LOOP_END 
 	{
-		printf("loop counter %d\n", $2);
+		encode_loop_end(NULL);
 	}
 	;
 
@@ -261,6 +265,9 @@ mkdir_cmd:
 cd_cmd:
 	TOK_CD_CMD quoted_name
 	{
+		int ret;
+
+		ret = encode_cd(NULL, $2);
 		free($2);
 	}
 	;
@@ -284,6 +291,9 @@ readdir_cmd:
 unlink_cmd:
 	TOK_UNLINK_CMD quoted_name
 	{
+		int ret;
+
+		ret = encode_unlink(NULL, $2);
 		free($2);
 	}
 	;
@@ -400,7 +410,7 @@ readln_cmd:
 expected:
 	TOK_EXPECTED TOK_EXP_STATUS
 	{
-		$$ = $2;
+		encode_expected(NULL, $2);
 	}
 	;
 

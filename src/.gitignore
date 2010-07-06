@@ -1,0 +1,5 @@
+.deps
+mdsim
+parse-gram.c
+parse-gram.h
+parse-lex.c

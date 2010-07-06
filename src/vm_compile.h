@@ -108,6 +108,12 @@ int vm_program_check(struct vm_program *vprg);
  */
 int vm_program_upload(struct vm_program *vprg);
 
+
+union cmd_arg {
+	enum vm_calls	cd_call;
+	long		cd_long;
+	char		*cd_string;
+};
 /**
  add command to the program.
  need to adjust vmp_end_idx to point to byte after command.
@@ -116,7 +122,7 @@ int vm_program_upload(struct vm_program *vprg);
  @param cmd - command
  @param data - command arguments
  */
-int vm_encode(struct vm_program *vprg, enum cmd_base cmd, void *data);
+int vm_encode(struct vm_program *vprg, enum cmd_base cmd, union cmd_arg data);
 
 /**
  add label to the list and fix all jump point to using correct address.

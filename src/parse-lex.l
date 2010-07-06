@@ -28,8 +28,8 @@ ENDPROC		[e][n][d][p][r][o][c]
 CLIENT		[c][l][i][e][n][t]
 SERVER		[s][e][r][v][e][r]
 
-LOOP_BEGIN	[d][o]
-LOOP_END	[l][o][o][p]
+LOOP_BEGIN	[l][o][o][p]
+LOOP_END	[e][n][d][l][o][o][p]
 
 CD		[c][d]
 UNLINK		[u][n][l][i][n][k]
@@ -67,6 +67,7 @@ ID		{alpha}({alpha}|{digit})+
 			yylval.intval = 1;
 		    else
 			yylval.intval = 0;
+
 		    return TOK_EXP_STATUS;
 		}
 
