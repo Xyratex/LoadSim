@@ -82,8 +82,14 @@ server_set:
 client_set:
 	TOK_CLIENT TOK_ID TOK_ID
 	{
+		int ret; 
+		
+		ret = client_create($2, $3);
 		free($2);
 		free($3);
+
+		if(ret)
+			YYABORT;
 	}
        ;
 /**
@@ -105,15 +111,23 @@ procedure:
 proc_begin:
 	TOK_PROC_BEGIN TOK_ID 
 	{
-		vm_label_resolve(NULL, START_LABEL);
+		int ret;
+
+		ret = procedure_start($2);
 		free($2);
+		if (ret)
+			YYABORT;
 	}
 	;
 
 proc_end:
 	TOK_PROC_END
 	{
-		vm_label_resolve(NULL, END_LABEL);
+		int ret;
+
+		ret = procedure_end();
+		if (ret)
+			YYABORT;
 	}
 	;
 
@@ -150,18 +164,22 @@ loop:
 loop_begin:
 	TOK_LOOP_BEGIN TOK_NUMBER
 	{
-		encode_loop_start(NULL, $2);
+		int ret;
+
+		ret = encode_loop_start(procedure_current(), $2);
+		if (ret)
+			YYABORT;
 	}
 	;
 
 loop_body:
-	| loop_body proc_commands
+	| proc_commands loop_body 
 	;
 
 loop_end:
 	TOK_LOOP_END 
 	{
-		encode_loop_end(NULL);
+		encode_loop_end(procedure_current());
 	}
 	;
 
@@ -267,8 +285,11 @@ cd_cmd:
 	{
 		int ret;
 
-		ret = encode_cd(NULL, $2);
+		ret = encode_cd(procedure_current(), $2);
 		free($2);
+
+		if (ret)
+			YYABORT;
 	}
 	;
 
@@ -293,8 +314,10 @@ unlink_cmd:
 	{
 		int ret;
 
-		ret = encode_unlink(NULL, $2);
+		ret = encode_unlink(procedure_current(), $2);
 		free($2);
+		if (ret)
+			YYABORT;
 	}
 	;
 
@@ -312,8 +335,12 @@ unlink_cmd:
 open_cmd:
 	TOK_OPEN_CMD quoted_name open_flags TOK_NUMBER
 	{
-		encode_open(NULL, $2, $3, $4);
+		int ret;
+
+		ret = encode_open(procedure_current(), $2, $3, $4);
 		free($2);
+		if (ret)
+			YYABORT;
 	}
 	;
 
@@ -338,7 +365,11 @@ open_flags:
 close_cmd:
 	TOK_CLOSE_CMD TOK_NUMBER
 	{
-		encode_close(NULL, $2);
+		int ret;
+
+		ret = encode_close(procedure_current(), $2);
+		if (ret)
+			YYABORT;
 	}
 	;
 
@@ -354,8 +385,12 @@ close_cmd:
 stat_cmd:
 	TOK_STAT_CMD quoted_name
 	{
-		encode_stat(NULL, $2);
+		int ret;
+
+		ret = encode_stat(procedure_current(), $2);
 		free($2);
+		if (ret)
+			YYABORT;
 	}
 	;
 
@@ -371,8 +406,12 @@ stat_cmd:
 setattr_cmd:
 	TOK_SETATTR_CMD quoted_name TOK_NUMBER
 	{
-		encode_setattr(NULL, $2, $3);
+		int ret;
+
+		ret = encode_setattr(procedure_current(), $2, $3);
 		free($2);
+		if (ret)
+			YYABORT;
 	}
 	;
 
@@ -385,9 +424,13 @@ setattr_cmd:
 mksln_cmd:
 	TOK_SOFTLINK_CMD quoted_name quoted_name
 	{
-		encode_softlink(NULL, $2, $3);
+		int ret;
+
+		ret = encode_softlink(procedure_current(), $2, $3);
 		free($2);
 		free($3);
+		if (ret)
+			YYABORT;
 	}
 	;
 
@@ -400,9 +443,13 @@ mksln_cmd:
 mkhln_cmd:
 	TOK_HARDLINK_CMD quoted_name quoted_name
 	{
-		encode_hardlink(NULL, $2, $3);
+		int ret;
+
+		ret = encode_hardlink(procedure_current(), $2, $3);
 		free($2);
 		free($3);
+		if (ret)
+			YYABORT;
 	}
 	;
 
@@ -415,8 +462,12 @@ mkhln_cmd:
 readln_cmd:
 	TOK_READLINK_CMD quoted_name
 	{
-		encode_readlink(NULL, $2);
+		int ret;
+
+		ret = encode_readlink(procedure_current(), $2);
 		free($2);
+		if (ret)
+			YYABORT;
 	}
 	;
 
@@ -424,7 +475,11 @@ readln_cmd:
 expected:
 	TOK_EXPECTED TOK_EXP_STATUS
 	{
-		encode_expected(NULL, $2);
+		int ret;
+
+		ret = encode_expected(procedure_current(), $2);
+		if (ret)
+			YYABORT;
 	}
 	;
 

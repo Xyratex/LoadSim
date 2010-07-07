@@ -17,7 +17,7 @@ struct server_link {
 	char			*sl_nid;
 };
 
-int setup_server(char *, char *);
+int server_create(char *, char *);
 
 /**
  test client settings
@@ -38,9 +38,9 @@ struct md_client {
 	/**
 	 program run on that client
 	 */
-	struct vm_program	*mdc_prg;
+	char			*mdc_prg;
 };
 
-int client_create(struct md_client **cli, char *name);
+int client_create(char *name, char *program);
 
 #endif

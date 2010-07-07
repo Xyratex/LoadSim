@@ -1,3 +1,6 @@
+#include <errno.h>
+#include <string.h>
+
 #include "encode.h"
 #include "vm_defs.h"
 #include "vm_compile.h"
@@ -192,12 +195,13 @@ int encode_readlink(struct vm_program *vprg,char *name)
 
 /****/
 #define LOOP_ST_LABEL "loop_st%u:"
-#define LOOP_END_LABEL "loop_end%u"
+#define LOOP_END_LABEL "loop_end%u:"
 
 static int loop_no = 0;
 /**
  pushl $num
 loop_st:
+ dup 
  jz loop_end;
  */
 int encode_loop_start(struct vm_program *vprg, int num)
@@ -212,8 +216,14 @@ int encode_loop_start(struct vm_program *vprg, int num)
 		return ret;
 
 	snprintf(label, sizeof label, LOOP_ST_LABEL, loop_no);
-	vm_label_resolve(vprg, label);
+	ret = vm_label_resolve(vprg, label);
+	if (ret)
+		return ret;
 
+	/* arg not used */
+	ret = vm_encode(vprg, VM_CMD_DUP, arg);
+	if (ret)
+		return ret;
 
 	snprintf(label, sizeof label, LOOP_END_LABEL, loop_no);
 	arg.cd_string = label;
@@ -260,24 +270,24 @@ int encode_loop_end(struct vm_program *vprg)
 }
 
 /**
+ dup
  push $exp
  if
  jz exit
+ pop ??
  */
 int encode_expected(struct vm_program *vprg, int exp)
 {
 	int ret;
 	union cmd_arg arg;
 
-	loop_no ++;
-
-	arg.cd_long = exp;
-	ret = vm_encode(vprg, VM_CMD_PUSHL, arg);
+	/* arg not used */
+	ret = vm_encode(vprg, VM_CMD_DUP, arg);
 	if (ret)
 		return ret;
 
-	/* arg not used */
-	ret = vm_encode(vprg, VM_CMD_IF, arg);
+	arg.cd_long = exp;
+	ret = vm_encode(vprg, VM_CMD_PUSHL, arg);
 	if (ret)
 		return ret;
 
@@ -287,5 +297,47 @@ int encode_expected(struct vm_program *vprg, int exp)
 		return ret;
 
 	/** XXX need pop */
+	return ret;
+}
+
+
+/******************/
+static struct vm_program *vprg = NULL;
+
+int procedure_start(char *name)
+{
+	int ret;
+
+	ret = vm_program_init(&vprg);
+	if (ret)
+		return ret;
+
+	vprg->vmp_name = strdup(name);
+	if (vprg->vmp_name == NULL) {
+		vm_program_fini(vprg);
+		return -ENOMEM;
+	}
+
+	ret = vm_label_resolve(vprg, START_LABEL);
+
+	return ret;
+}
+
+struct vm_program *procedure_current(void)
+{
+	return vprg;
+}
+
+int procedure_end(void)
+{
+	int ret;
+
+	ret = vm_label_resolve(vprg, END_LABEL);
+	if (ret)
+		return ret;
+
+	ret = vm_program_check(vprg);
+
+
 	return ret;
 }

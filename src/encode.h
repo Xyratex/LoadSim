@@ -5,6 +5,9 @@ struct vm_program;
 #define START_LABEL	"start:"
 #define END_LABEL	"end:"
 
+/**
+ functions to convert into asm code
+ */
 int encode_cd(struct vm_program *prg, char *dir);
 int encode_mkdir(struct vm_program *prg, char *dir);
 int encode_readdir(struct vm_program *prg, char *dir);
@@ -21,5 +24,9 @@ int encode_loop_do(struct vm_program *prg);
 int encode_loop_loop(struct vm_program *prg, int num);
 int encode_expected(struct vm_program *prg, int val);
 
+
+int procedure_start(char *name);
+struct vm_program *procedure_current(void);
+int procedure_finish(void);
 
 #endif

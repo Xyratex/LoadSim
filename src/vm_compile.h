@@ -130,6 +130,6 @@ int vm_encode(struct vm_program *vprg, enum cmd_base cmd, union cmd_arg data);
 
  @param vprg - program to add label.
  */
-void vm_label_resolve(struct vm_program *vprg, char *label_name);
+int vm_label_resolve(struct vm_program *vprg, char *label_name);
 
 #endif

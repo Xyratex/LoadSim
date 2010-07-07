@@ -3,4 +3,6 @@
 
 #define DPRINT(a, ...) if (1) { printf(a, ##__VA_ARGS__); }
 
+#define err_print(a, ...) fprintf(stderr, a, ##__VA_ARGS__)
+
 #endif

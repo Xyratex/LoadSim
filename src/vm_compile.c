@@ -95,6 +95,12 @@ static int enc_sub(struct vm_program *vprg, union cmd_arg data)
 	return 0;
 }
 
+static int enc_dup(struct vm_program *vprg, union cmd_arg data)
+{
+	DPRINT("dup\n");
+	return 0;
+}
+
 static enc_h_t en_helpers[VM_CMD_MAX] = {
 	[VM_CMD_PUSHS]	= enc_pushs,
 	[VM_CMD_PUSHL]	= enc_pushl,
@@ -105,7 +111,8 @@ static enc_h_t en_helpers[VM_CMD_MAX] = {
 	[VM_CMD_JZ]	= enc_jz,
 	[VM_CMD_IF]	= enc_if,
 	[VM_CMD_ADD]	= enc_add,
-	[VM_CMD_SUB]	= enc_sub
+	[VM_CMD_SUB]	= enc_sub,
+	[VM_CMD_DUP]	= enc_dup,
 };
 
 int vm_encode(struct vm_program *vprg, enum cmd_base cmd, union cmd_arg data)
@@ -114,11 +121,11 @@ int vm_encode(struct vm_program *vprg, enum cmd_base cmd, union cmd_arg data)
 		return -EINVAL;
 
 	return en_helpers[cmd](vprg, data);
-
-	return 0;
 }
 
-void vm_label_resolve(struct vm_program *vprg, char *label_name)
+int vm_label_resolve(struct vm_program *vprg, char *label_name)
 {
 	DPRINT("resolve label %s\n", label_name);
+
+	return 0;
 }

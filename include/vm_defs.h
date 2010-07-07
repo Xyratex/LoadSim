@@ -22,6 +22,8 @@ enum cmd_base {
 	VM_CMD_ADD,
 	/* */
 	VM_CMD_SUB,
+	/* duplicate data on stack top */
+	VM_CMD_DUP,
 	VM_CMD_MAX,
 };
 
