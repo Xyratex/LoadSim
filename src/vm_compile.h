@@ -76,7 +76,7 @@ struct vm_program {
 	/**
 	 labels in the program
 	*/
-	struct vm_labels	vpm_labels;
+	struct list_head vmp_labels;
 };
 
 /**
@@ -84,7 +84,7 @@ struct vm_program {
 
  @param vprg pointer to new program or NULL if program can't created.
  */
-int vm_program_init(struct vm_program **vprg);
+int vm_program_init(struct vm_program **vprg, char *name);
 
 /**
  release resources allocated for the program.

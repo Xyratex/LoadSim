@@ -227,9 +227,7 @@ int encode_loop_start(struct vm_program *vprg, int num)
 
 	snprintf(label, sizeof label, LOOP_END_LABEL, loop_no);
 	arg.cd_string = label;
-	ret = vm_encode(vprg, VM_CMD_JZ, arg);
-	if (ret)
-		return ret;
+	return vm_encode(vprg, VM_CMD_JZ, arg);
 }
 /**
  pushl 1
@@ -256,7 +254,9 @@ int encode_loop_end(struct vm_program *vprg)
 		return ret;
 
 	snprintf(label, sizeof label, LOOP_ST_LABEL, loop_no);
-	vm_label_resolve(vprg, label);
+	ret = vm_label_resolve(vprg, label);
+	if (ret)
+		return ret;
 
 	arg.cd_string = label;
 	ret = vm_encode(vprg, VM_CMD_GOTO, arg);
@@ -264,9 +264,7 @@ int encode_loop_end(struct vm_program *vprg)
 		return ret;
 
 	snprintf(label, sizeof label, LOOP_END_LABEL, loop_no);
-	vm_label_resolve(vprg, label);
-
-	return 0;
+	return vm_label_resolve(vprg, label);
 }
 
 /**
@@ -274,13 +272,14 @@ int encode_loop_end(struct vm_program *vprg)
  push $exp
  if
  jz exit
- pop ??
+ pop 
  */
 int encode_expected(struct vm_program *vprg, int exp)
 {
 	int ret;
 	union cmd_arg arg;
 
+	/* dup need to read status on finish */
 	/* arg not used */
 	ret = vm_encode(vprg, VM_CMD_DUP, arg);
 	if (ret)
@@ -291,12 +290,21 @@ int encode_expected(struct vm_program *vprg, int exp)
 	if (ret)
 		return ret;
 
+	/* arg not used */
+	ret = vm_encode(vprg, VM_CMD_CMPL, arg);
+	if (ret)
+		return ret;
+
 	arg.cd_string = END_LABEL;
 	ret = vm_encode(vprg, VM_CMD_JZ,arg);
 	if (ret)
 		return ret;
 
-	/** XXX need pop */
+	/* arg not used */
+	ret = vm_encode(vprg, VM_CMD_NOP, arg);
+	if (ret)
+		return ret;
+
 	return ret;
 }
 
@@ -308,15 +316,9 @@ int procedure_start(char *name)
 {
 	int ret;
 
-	ret = vm_program_init(&vprg);
+	ret = vm_program_init(&vprg, name);
 	if (ret)
 		return ret;
-
-	vprg->vmp_name = strdup(name);
-	if (vprg->vmp_name == NULL) {
-		vm_program_fini(vprg);
-		return -ENOMEM;
-	}
 
 	ret = vm_label_resolve(vprg, START_LABEL);
 

@@ -16,14 +16,14 @@ enum cmd_base {
 	VM_CMD_GOTO,
 	/* conditional jump, results on top of stack */
 	VM_CMD_JZ,
-	/* compare two operands on stack, result put on stack*/
-	VM_CMD_IF,
 	/* */
 	VM_CMD_ADD,
 	/* */
 	VM_CMD_SUB,
 	/* duplicate data on stack top */
 	VM_CMD_DUP,
+	/* just remove entry on stack top */
+	VM_CMD_NOP,
 	VM_CMD_MAX,
 };
 
