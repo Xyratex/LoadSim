@@ -1,12 +1,113 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
-#include <arpa/inet.h> /* htonl */
 
-#include "vm_compile.h"
+#include "list.h"
 #include "vm_defs.h"
+#include "vm_compile.h"
 
 #include "debug.h"
+
+/**
+ try to find label by name or allocate new
+ */
+static struct vm_label *vm_label_find(struct vm_program *vprg, char *name)
+{
+	struct vm_label *ret;
+	struct vm_label_wait *w;
+
+	list_for_each_entry(ret, &vprg->vmp_labels, vl_link) {
+		if (strcasecmp(ret->vl_name, name) == 0) {
+			/* forward reference to label.
+			   create new wait reference.
+			 */
+			if (ret->vl_addr == 0) {
+				w = malloc(sizeof *w);
+				if (w == NULL)
+					return NULL;
+				w->vlw_addr = (long *)&vprg->vmp_data[vprg->vmp_enc_idx];
+				list_add(&w->vlw_link, &ret->vl_waits);
+			}
+			return ret;
+		}
+	}
+
+	ret = malloc(sizeof *ret);
+	if (ret == NULL)
+		return NULL;
+
+	ret->vl_name = strdup(name);
+	if (ret->vl_name == NULL) {
+		free(ret);
+		return NULL;
+	}
+	ret->vl_addr = 0;
+	INIT_LIST_HEAD(&ret->vl_waits);
+
+	list_add(&ret->vl_link, &vprg->vmp_labels);
+
+	return ret;
+}
+
+int vm_label_resolve(struct vm_program *vprg, char *label_name)
+{
+	struct vm_label *label;
+	struct vm_label_wait *tmp;
+	struct vm_label_wait *w;
+
+	DPRINT("resolve label %s\n", label_name);
+
+	label = vm_label_find(vprg, label_name);
+	if (label == NULL)
+		return -ENOMEM;
+
+	/* second label with same name ?... */
+	if (label->vl_addr != 0)
+		return -EINVAL;
+
+	/* resolve forward reference */
+	label->vl_addr = vprg->vmp_enc_idx;
+	list_for_each_entry_safe(w, tmp, &label->vl_waits, vlw_link) {
+		*(w->vlw_addr) = vprg->vmp_enc_idx;
+		list_del(&w->vlw_link);
+		free(w);
+	}
+
+	return 0;
+}
+
+static void vm_labels_fini(struct vm_program *vprg)
+{
+	struct vm_label *label;
+	struct vm_label *ltmp;
+	struct vm_label_wait *tmp;
+	struct vm_label_wait *w;
+
+	list_for_each_entry_safe(label, ltmp, &vprg->vmp_labels, vl_link) {
+		list_for_each_entry_safe(w, tmp, &label->vl_waits, vlw_link) {
+			list_del(&w->vlw_link);
+			free(w);
+		}
+		free(label->vl_name);
+		list_del(&label->vl_link);
+		free(label);
+	}
+
+}
+static int vm_labels_is_resolved(struct vm_program *vprg)
+{
+	struct vm_label *label;
+
+	list_for_each_entry(label, &vprg->vmp_labels, vl_link) {
+		if (label->vl_addr == 0)
+			return -ENODATA;
+		if (!list_empty(&label->vl_waits))
+			return -EINVAL;
+	}
+
+	return 0;
+}
+
 
 static LIST_HEAD(vm_programs);
 
@@ -44,12 +145,23 @@ int vm_program_init(struct vm_program **vprg, char *name)
 void vm_program_fini(struct vm_program *vprg)
 {
 	DPRINT("%s", "program destroyed\n");
+
+	list_del(&vprg->vmp_link);
+	vm_labels_fini(vprg);
+	free(vprg->vmp_data);
+	free(vprg->vmp_name);
+	free(vprg);
 }
 
 int vm_program_check(struct vm_program *vprg)
 {
+	int rc;
 	DPRINT("program check \n");
 
+	/* first check all labels resolved */
+	rc = vm_labels_is_resolved(vprg);
+	if (rc < 0)
+		return rc;
 
 	return 0;
 }
@@ -57,8 +169,11 @@ int vm_program_check(struct vm_program *vprg)
 int vm_program_upload(struct vm_program *vprg)
 {
 	DPRINT("upload program into kernel\n");
+
+	/** XXX kernel API */
 	return 0;
 }
+
 
 /******************/
 typedef int (*enc_h_t)(struct vm_program *vprg, union cmd_arg data);
@@ -78,19 +193,14 @@ static int add_byte_to_buffer(struct vm_program *vprg, char byte)
 
 static int add_long_to_buffer(struct vm_program *vprg, long ldata)
 {
-	long l = htonl(ldata);
+	long *l;
 
-	if (add_byte_to_buffer(vprg, l & 0xFF))
+	if (vprg->vmp_size <= (vprg->vmp_enc_idx + sizeof(long)))
 		return -ENOMEM;
 
-	if (add_byte_to_buffer(vprg, (l >> 8) & 0xFF))
-		return -ENOMEM;
-
-	if (add_byte_to_buffer(vprg, (l >> 16) & 0xFF))
-		return -ENOMEM;
-
-	if (add_byte_to_buffer(vprg, (l >> 24) & 0xFF))
-		return -ENOMEM;
+	l = (long *)&vprg->vmp_data[vprg->vmp_enc_idx];
+	*l = ldata;
+	vprg->vmp_enc_idx += sizeof(long);
 
 	return 0;
 }
@@ -131,7 +241,6 @@ static int enc_cmps(struct vm_program *vprg, union cmd_arg data)
 static int enc_cmpl(struct vm_program *vprg, union cmd_arg data)
 {
 	DPRINT("cmpl\n");
-
 	return 0;
 }
 
@@ -144,20 +253,26 @@ static int enc_call(struct vm_program *vprg, union cmd_arg data)
 
 static int enc_goto(struct vm_program *vprg, union cmd_arg data)
 {
-	long address;
+	struct vm_label *l;
 	DPRINT("goto %s\n", data.cd_string);
 
-	/** XXX find label or create waiting link */
+	l = vm_label_find(vprg, data.cd_string);
+	if (l == NULL)
+		return -ENOMEM;
 
-	return add_long_to_buffer(vprg, address);
+	return add_long_to_buffer(vprg, l->vl_addr);
 }
 
 static int enc_jz(struct vm_program *vprg, union cmd_arg data)
 {
-	long address;
+	struct vm_label *l;
 	DPRINT("jz %s\n", data.cd_string);
 
-	return add_long_to_buffer(vprg, address);
+	l = vm_label_find(vprg, data.cd_string);
+	if (l == NULL)
+		return -ENOMEM;
+
+	return add_long_to_buffer(vprg, l->vl_addr);
 }
 
 static int enc_add(struct vm_program *vprg, union cmd_arg data)
@@ -212,9 +327,3 @@ int vm_encode(struct vm_program *vprg, enum cmd_base cmd, union cmd_arg data)
 	return en_helpers[cmd](vprg, data);
 }
 
-int vm_label_resolve(struct vm_program *vprg, char *label_name)
-{
-	DPRINT("resolve label %s\n", label_name);
-
-	return 0;
-}

@@ -3,6 +3,7 @@
 
 #include "encode.h"
 #include "vm_defs.h"
+#include "md_api.h"
 #include "vm_compile.h"
 
 /**
@@ -272,7 +273,7 @@ int encode_loop_end(struct vm_program *vprg)
  push $exp
  if
  jz exit
- pop 
+ pop (nop)
  */
 int encode_expected(struct vm_program *vprg, int exp)
 {
@@ -339,7 +340,12 @@ int procedure_end(void)
 		return ret;
 
 	ret = vm_program_check(vprg);
-
-
+#if 0
+	{
+	    FILE *f = fopen(vprg->vmp_name,"wb+");
+	    fwrite(vprg->vmp_data, vprg->vmp_enc_idx, 1, f);
+	    fclose(f);
+	}
+#endif
 	return ret;
 }

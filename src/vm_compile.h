@@ -23,13 +23,13 @@ struct vm_label_wait {
 	/**
 	 address of code, which want to fix
 	*/
-	long		 vlw_addr;
+	long		*vlw_addr;
 };
 
 /**
  labels in a program
  */
-struct vm_labels {
+struct vm_label {
 	/**
 	 link into global labels list
 	*/
@@ -110,7 +110,7 @@ int vm_program_upload(struct vm_program *vprg);
 
 
 union cmd_arg {
-	enum vm_calls	cd_call;
+	int		cd_call; /* enum vm_md_call */
 	long		cd_long;
 	char		*cd_string;
 };
