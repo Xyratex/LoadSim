@@ -27,4 +27,33 @@ enum cmd_base {
 	VM_CMD_MAX,
 };
 
+enum vm_sys_calls {
+	VM_SYS_USER	= 0,
+	VM_SYS_GROUP,
+	VM_SYS_CALL_MAX
+};
+
+/**
+ procedures called via VM_CMD_CALL function
+ */
+enum vm_md_calls {
+	VM_MD_CALL_CD	= 100,
+	VM_MD_CALL_MKDIR,
+	VM_MD_CALL_READIR,
+	VM_MD_CALL_UNLINK,
+	VM_MD_CALL_OPEN,
+	VM_MD_CALL_CLOSE,
+	VM_MD_CALL_STAT,
+	VM_MD_CALL_SETATTR,
+	VM_MD_CALL_SOFTLINK,
+	VM_MD_CALL_HARDLINK,
+	VM_MD_CALL_READLINK,
+	VM_MD_CALL_MAX,
+};
+
+int md_handlers_register(void);
+
+void md_handlers_unregister(void);
+
+
 #endif
