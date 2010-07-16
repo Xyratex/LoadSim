@@ -13,17 +13,21 @@ struct fifo;
  \return 0 if function is executed ok, non zero return code has indicate
   fatal error
  */
-typedef int (*vm_func)(struct fifo *fifo, uint32_t *IP);
+typedef int (*vm_func)(void *env, struct fifo *fifo, uint32_t *IP);
+
+
+struct handler_reg {
+	enum vm_md_cals	hr_id,
+	vm_func		hr_func,
+};
 
 /**
  register handler for specificed function
- \a id - unique identifier of the function
- \a ptr - pointer to handler function
  
  \retval 0 - function registered successfully
  \retval -EEXIST - function with that id already exist.
  */
-int vm_register_handler(unsigned long id, vm_func ptr);
+int vm_handler_register(int nr, struct handler_reg *h);
 
 /**
  remove handler from a system.
@@ -33,29 +37,48 @@ int vm_register_handler(unsigned long id, vm_func ptr);
  \retval -ENOSRC - function with that id not registered in system
  \retval <0 - other errors.
  */
-int vm_unregister_handler(unsigned long id);
+int vm_handler_unregister(int nr, struct handler_reg *h);
 
 
 /**
+ internal VM state
+ */
+struct stack_vm {
+	char		*sv_program;
+	int		sv_size;
+	int32_t		sv_ip;
+	struct fifo	*sv_stack;
+	void		*sv_env;
+
+};
+
+/* vm_main.c */
+
+/**
  set interpreter intial state.
+ \a vm new create vm pointer
  \a stack_size - maximal stack usage
+ \a prg program to copy from user memory
+ \a size program size
+ \a env enviroment to run external function
  
  \retval 0 - interperter fully init
  \retval -ENOMEM - not have memory
  \retval <0 - other errors
  */
-int vm_interpret_init(int stack_size);
+int vm_interpret_init(struct stack_vm **vm, int stack_size,
+		      char __user *prg, int size, void *env)
 
 /**
- destroy interpreter
+ destroy virtual machine and relese owned resources.
  */
-void vm_interpret_fini(void);
+void vm_interpret_fini(struct stack_vm *vm);
 
 /**
  run program on virtual machine.
  
  fuction has returned data from top of stack and assume that is return code.
  */
-int vm_interpret_run(char *program, size_t size);
+int vm_interpret_run(struct stack_vm *vm);
 
 #endif
