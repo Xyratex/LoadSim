@@ -21,15 +21,13 @@ void fifo_destroy(struct fifo *fifo);
 /**
  push element into stack.
  
- \return <0 if none freespace in stack; 0, if successfully added.
  */
-int fifo_push(struct fifo *f, void *ptr);
+int fifo_push(struct fifo *f, long data);
 
 /**
  get element from top of the stack.
  
- \return NULL if stack is empty, otherwise non NULL pointer is returned.
  */
-void* fifo_pop(struct fifo *f);
+int fifo_pop(struct fifo *f, long *data);
 
 #endif

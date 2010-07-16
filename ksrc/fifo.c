@@ -3,16 +3,56 @@
 struct fifo {
 	int ff_size;
 	int ff_top;
-	void *ff_data[0];
+	int ff_bottom;
+	long ff_data[0];
 };
 
-int fifo_push(void *ptr)
+struct fifo *fifo_create(int size)
 {
+	struct fifo *f;
+
+	f = malloc(sizeof(struct fifo) + size *sizeof(void *));
+	if (f == NULL)
+		return NULL;
+
+	f->ff_size = size;
+	f->ff_top = size;
+	f->ff_bottom = size;
+
+	return f;
+}
+
+/**
+ destroy fifo structure
+ */
+void fifo_destroy(struct fifo *fifo)
+{
+	if (fifo->ff_bottom != fifo->ff_top) {
+		printf("leak\n");
+	}
+
+	free(fifo);
+}
+
+
+int fifo_push(struct fifo *f, long data)
+{
+	if (f->ff_bottom == f->ff_top)
+		return -ENOMEM;
+
+	f->ff_data[f->ff_top] = data;
+	f->ff_top = (f->ff_top + 1) % f->ff_size;
 
 	return 0;
 }
 
-void *fifo_pop()
+int fifo_pop(struct fifo *f, long *data)
 {
-	return NULL;
+	if (f->ff_bottom == f->ff_top)
+		return -ENODATA;
+
+	*data = f->ff_data[f->ff_bottom];
+	f->ff_bottom = (f->ff_bottom + 1) % f->ff_size;
+
+	return 0;
 }
