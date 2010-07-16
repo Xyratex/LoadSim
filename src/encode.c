@@ -334,6 +334,13 @@ struct vm_program *procedure_current(void)
 int procedure_end(void)
 {
 	int ret;
+	union cmd_arg arg;
+
+	/* program return code if finished ok */
+	arg.cd_long = 0;
+	ret = vm_encode(vprg, VM_CMD_PUSHL, arg);
+	if (ret)
+		return ret;
 
 	ret = vm_label_resolve(vprg, END_LABEL);
 	if (ret)
