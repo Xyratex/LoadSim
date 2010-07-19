@@ -6,7 +6,7 @@
 #include <linux/miscdevice.h>
 
 #include "../include/kapi.h"
-#include "../include/vm_defs.h"
+#include "../include/vm_defs.h" /* register / unregister */
 #include "vm_api.h"
 #include "md_env.h"
 
@@ -30,26 +30,17 @@ static int mdclient_create(struct simul_ioctl_cli *data)
 	struct md_env *env;
 	struct task_struct *p;
 
-	rc = md_client_create(&env);
+	rc = md_client_create(&env, data);
 	if (rc < 0)
 		return rc;
 
-	rc = vm_interpret_init(&env->mde_vm, VM_DEF_STACK,
-				data->sic_program, data->sic_programsz, env);
-	if (rc < 0)
-		goto err1;
-
-	/** XXX connect, etc */
-        
 	p = kthread_create(client_thread, env->mde_vm, data->sic_name);
 	if (IS_ERR(p)) {
 		rc = PTR_ERR(p);
-		goto err2;
+		goto err;
 	}
 	return 0;
-err2:
-	vm_interpret_fini(env->mde_vm);
-err1:
+err:
 	md_client_destroy(env);
 	return rc;
 }
