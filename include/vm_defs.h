@@ -30,8 +30,14 @@ enum cmd_base {
 enum vm_sys_calls {
 	VM_SYS_USER	= 0,
 	VM_SYS_GROUP,
+	VM_SYS_SLEEP,
+	VM_SYS_RACE,
 	VM_SYS_CALL_MAX
 };
+
+int sys_handlers_register(void);
+
+void sys_handlers_unregister(void);
 
 /**
  procedures called via VM_CMD_CALL function
