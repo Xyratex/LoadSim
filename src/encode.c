@@ -7,6 +7,10 @@
 #include "vm_compile.h"
 
 /**
+ convert test language commands into VM code
+*/
+
+/**
  cd := push "name"; call cd;
  */
 int encode_cd(struct vm_program *vprg, char *dir)

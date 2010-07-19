@@ -1,8 +1,6 @@
 #ifndef _MD_CLIENT_H_
 #define _MD_CLIENT_H_
 
-#include "vm_compile.h"
-
 /**
  connection to meta-data server
 */
@@ -16,7 +14,9 @@ struct server_link {
 	 */
 	char			*sl_nid;
 };
-
+/**
+ initialize server connection
+ */
 int server_create(char *, char *);
 
 /**
@@ -34,13 +34,16 @@ struct md_client {
 	/**
 	 connection info
 	 */
-	struct mds_connect	*mdc_mds;
+	struct server_link	*mdc_mds;
 	/**
 	 program run on that client
 	 */
 	char			*mdc_prg;
 };
 
+/**
+ create new client
+ */
 int client_create(char *name, char *program);
 
 #endif

@@ -94,6 +94,7 @@ static void vm_labels_fini(struct vm_program *vprg)
 	}
 
 }
+
 static int vm_labels_is_resolved(struct vm_program *vprg)
 {
 	struct vm_label *label;

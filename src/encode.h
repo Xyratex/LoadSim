@@ -24,6 +24,10 @@ int encode_loop_do(struct vm_program *prg);
 int encode_loop_loop(struct vm_program *prg, int num);
 int encode_expected(struct vm_program *prg, int val);
 
+int encode_user(struct vm_program *prg, int uid);
+int encode_group(struct vm_program *prg, int gid);
+int encode_sleep(struct vm_program *prg, int ms);
+int encode_race(struct vm_program *prg, int raceid);
 
 int procedure_start(char *name);
 struct vm_program *procedure_current(void);

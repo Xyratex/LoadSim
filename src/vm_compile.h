@@ -109,10 +109,13 @@ int vm_program_check(struct vm_program *vprg);
 int vm_program_upload(struct vm_program *vprg);
 
 
+/**
+ arguments of the VM functions
+ */
 union cmd_arg {
-	int		cd_call; /* enum vm_md_call */
-	long		cd_long;
-	char		*cd_string;
+	int		cd_call; /** call id */
+	long		cd_long; /** integer value */
+	char		*cd_string; /** string */
 };
 /**
  add command to the program.
