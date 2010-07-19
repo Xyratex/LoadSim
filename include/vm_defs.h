@@ -1,6 +1,10 @@
 #ifndef _STACK_VM_DEFS_H_
 #define _STACK_VM_DEFS_H_
 
+enum {
+	VM_DEF_STACK = 20
+};
+
 enum cmd_base {
 	/* push pointer to string */
 	VM_CMD_PUSHS,
