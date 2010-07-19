@@ -1,6 +1,8 @@
 #ifndef _STACK_VM_API_H_
 #define _STACK_VM_API_H_
 
+#include <linux/types.h>
+
 struct fifo;
 
 /**

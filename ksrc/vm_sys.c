@@ -1,5 +1,10 @@
+#include <linux/kernel.h>
+#include <linux/errno.h>
+#include <linux/sched.h>
+
 #include "fifo.h"
-#include "vm_defs.h"
+#include "../include/vm_defs.h"
+#include "vm_api.h"
 
 /**
  VM_SYS_USER
@@ -33,16 +38,16 @@ static int sys_call_group(void *env, struct fifo *f, uint32_t *ip)
 
 
 struct handler_reg sys_hld[] = {
-    {.mh_id = VM_SYS_USER, .mh_func = md_call_user },
-    {.mh_id = VM_SYS_GROUP, .mh_func = md_call_group },
+    {.hr_id = VM_SYS_USER, .hr_func = sys_call_user },
+    {.hr_id = VM_SYS_GROUP, .hr_func = sys_call_group },
 };
 
-int sys_handlers_init()
+int sys_handlers_register()
 {
-	return vm_handler_register(ARRAY_SIZE(md_hld), md_hld);
+	return vm_handler_register(ARRAY_SIZE(sys_hld), sys_hld);
 }
 
-void md_handlers_unregister()
+void sys_handlers_unregister()
 {
-	vm_handler_unregister(ARRAY_SIZE(md_hld), md_hld);
+	vm_handler_unregister(ARRAY_SIZE(sys_hld), sys_hld);
 }
