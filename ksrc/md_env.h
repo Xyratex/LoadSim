@@ -6,6 +6,8 @@ struct obd_export;
 struct stack_vm;
 struct simul_ioctl_cli;
 
+#include <linux/list.h>
+
 /**
  enviroment for metata tests
  
