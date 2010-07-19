@@ -1,20 +1,23 @@
+#include <linux/slab.h>
 #include <linux/list.h>
+#include <linux/errno.h>
+#include <linux/slab.h>
 
 #include "vm_api.h"
 
 static LIST_HEAD(vm_calls);
 
 struct vm_handler {
-	struct list_head vh_link;
-	int		vh_nr;
-	handler_reg	*vh_handler;
+	struct list_head 	vh_link;
+	int			vh_nr;
+	struct handler_reg	*vh_handler;
 };
 
 int vm_handler_register(int nr, struct handler_reg *h)
 {
 	struct vm_handler *link;
 
-	link = malloc(sizeof *link);
+	link = kmalloc(sizeof *link, GFP_KERNEL);
 	if (link == NULL)
 		return -ENOMEM;
 
@@ -35,33 +38,36 @@ int vm_handler_unregister(int nr, struct handler_reg *h)
 		if ((link->vh_nr == nr) &&
 		    (link->vh_handler == h)) {
 			list_del(&link->vh_link);
-			free(link);
+			kfree(link);
+
+			return 0;
 		}
 	}
 
-	return -ENOSRCH;
+	return -ESRCH;
 }
 
-static vm_func *vm_handler_find(unsigned long id)
+static vm_func vm_handler_find(unsigned long id)
 {
 	struct vm_handler *link;
+	int i;
 
 	list_for_each_entry(link, &vm_calls, vh_link) {
-		for (i = 0; i < link->vh_hr, i++)
-			if (link->vh_handlers[i].hr_id == id)
-				return link->vh_handlers[i].hr_func;
+		for (i = 0; i < link->vh_nr; i++)
+			if (link->vh_handler[i].hr_id == id)
+				return link->vh_handler[i].hr_func;
 	}
 	return NULL;
 }
 
 
 /**
-  call handler, function id on top fifo
   VM_CMD_CALL
+  call handler, function id is long after OP id.
 */
 int vm_call(struct stack_vm *vm, void *args)
 {
-	struct vm_func *f;
+	vm_func f;
 	long fn;
 
 	fn = *(long *)args;

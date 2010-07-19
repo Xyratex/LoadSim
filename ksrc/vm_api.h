@@ -1,7 +1,5 @@
-#ifndef _STACK_VM_DEFS_H_
-#define _STACK_VM_DEFS_H_
-
-#include "vm_defs.h"
+#ifndef _STACK_VM_API_H_
+#define _STACK_VM_API_H_
 
 struct fifo;
 
@@ -17,8 +15,8 @@ typedef int (*vm_func)(void *env, struct fifo *fifo, uint32_t *IP);
 
 
 struct handler_reg {
-	enum vm_md_cals	hr_id,
-	vm_func		hr_func,
+	int	hr_id;
+	vm_func	hr_func;
 };
 
 /**
@@ -49,7 +47,8 @@ struct stack_vm {
 	int32_t		sv_ip;
 	struct fifo	*sv_stack;
 	void		*sv_env;
-
+	long		sv_run:1;
+	int		sv_rc;
 };
 
 /* vm_main.c */
@@ -67,7 +66,7 @@ struct stack_vm {
  \retval <0 - other errors
  */
 int vm_interpret_init(struct stack_vm **vm, int stack_size,
-		      char __user *prg, int size, void *env)
+		      char __user *prg, int size, void *env);
 
 /**
  destroy virtual machine and relese owned resources.
