@@ -1,4 +1,5 @@
-#include <stdio.h>
+#include <linux/slab.h>
+#include "fifo.h"
 
 struct fifo {
 	int ff_size;
@@ -11,7 +12,7 @@ struct fifo *fifo_create(int size)
 {
 	struct fifo *f;
 
-	f = malloc(sizeof(struct fifo) + size *sizeof(void *));
+	f = kmalloc(sizeof(struct fifo) + size *sizeof(void *), GFP_KERNEL);
 	if (f == NULL)
 		return NULL;
 
@@ -28,10 +29,10 @@ struct fifo *fifo_create(int size)
 void fifo_destroy(struct fifo *fifo)
 {
 	if (fifo->ff_bottom != fifo->ff_top) {
-		printf("leak\n");
+		printk(KERN_ERR "leak\n");
 	}
 
-	free(fifo);
+	kfree(fifo);
 }
 
 

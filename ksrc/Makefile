@@ -1,8 +1,8 @@
 ifneq ($(KERNELRELEASE),)
-    obj-m	:= mdsim.o
-    mdsim-objs	:= fifo.o vm_main.o vm_call.o vm_math.o mdsimul.o
+    obj-m	:= sim.o
+    sim-objs	:= fifo.o 
 else
-    KDIR        := 
+    KDIR        := /lib/modules/$(shell uname -r)/build/
     PWD         := $(shell pwd)
 
 debug:
