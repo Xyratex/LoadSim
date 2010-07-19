@@ -1,6 +1,8 @@
-#include "fifo.h"
+#include <linux/string.h>
+#include <linux/errno.h>
 
-#include "vm_core.h"
+#include "fifo.h"
+#include "vm_api.h"
 
 /** 
  push pointer to string
@@ -33,15 +35,15 @@ int vm_pushl(struct stack_vm *vm, void *args)
 */
 int vm_cmps(struct stack_vm *vm, void *args)
 {
-	char *a;
-	char *b;
+	long a;
+	long b;
 	long rc;
 
-	if (!fifo_pop(vm->sv_stack, (long)a) ||
-            !fifo_pop(vm->sv_stack, (long)b))
+	if (!fifo_pop(vm->sv_stack, &a) ||
+            !fifo_pop(vm->sv_stack, &b))
 		return -ENODATA;
 
-	rc = strcmp(a,b);
+	rc = strcmp((char *)a, (char *)b);
 
 	return fifo_push(vm->sv_stack, rc);
 }
@@ -56,8 +58,8 @@ int vm_cmpl(struct stack_vm *vm, void *args)
 	long b;
 	long rc;
 
-	if (!fifo_pop(vm->sv_stack, a) ||
-            !fifo_pop(vm->sv_stack, b))
+	if (!fifo_pop(vm->sv_stack, &a) ||
+            !fifo_pop(vm->sv_stack, &b))
 		return -ENODATA;
 
 	if (a > b) 
@@ -78,7 +80,7 @@ int vm_goto(struct stack_vm *vm, void *args)
 {
 	long addr;
 
-	addr = *(*long)args;
+	addr = *(long *)args;
 	vm->sv_ip = addr;
 
 	return 0;
@@ -89,7 +91,7 @@ int vm_goto(struct stack_vm *vm, void *args)
  conditional jump, results on top of stack 
  VM_CMD_JZ
 */
-int vm_jz(struct stack_vm *vm, void *args);
+int vm_jz(struct stack_vm *vm, void *args)
 {
 	long a;
 	long addr;
@@ -115,8 +117,8 @@ int vm_add(struct stack_vm *vm, void *args)
 	long b;
 	long res;
 
-	if (!fifo_pop(vm->sv_stack, a) ||
-	    !fifo_pop(vm->sv_stack, b))
+	if (!fifo_pop(vm->sv_stack, &a) ||
+	    !fifo_pop(vm->sv_stack, &b))
 		return -ENODATA;
 
 	res = a + b;
@@ -132,8 +134,8 @@ int vm_sub(struct stack_vm *vm, void *args)
 	long b;
 	long res;
 
-	if (!fifo_pop(vm->sv_stack, a) ||
-	    !fifo_pop(vm->sv_stack, b))
+	if (!fifo_pop(vm->sv_stack, &a) ||
+	    !fifo_pop(vm->sv_stack, &b))
 		return -ENODATA;
 
 	res = a - b;

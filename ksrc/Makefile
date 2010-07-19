@@ -1,6 +1,6 @@
 ifneq ($(KERNELRELEASE),)
     obj-m	:= sim.o
-    sim-objs	:= fifo.o vm_main.o
+    sim-objs	:= fifo.o vm_main.o vm_core.o
 else
     KDIR        := /lib/modules/$(shell uname -r)/build/
     PWD         := $(shell pwd)
