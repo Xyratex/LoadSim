@@ -2,13 +2,17 @@
 #include "stdlib.h"
 
 #include "debug.h"
-#include "list.h"
-#include "vm_compile.h"
+#include "kernel.h"
 
 int main(int argc, char *argv[])
 {
-	struct vm_program *prog;
 	int rc;
+
+	rc = simul_api_open();
+	if (rc < 0) {
+		err_print("can't open kernel interface\n");
+		return 1;
+	}
 
 	rc = yyparse();
 	if (rc) {
@@ -16,5 +20,9 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	/* setup clients */
+	simul_api_run();
+
+	simul_api_wait_finished();
+
+	simul_api_close();
 }

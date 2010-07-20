@@ -64,8 +64,13 @@ main_command:
 server_set:
 	TOK_SERVER TOK_ID TOK_NID
 	{
+		int ret;
+		ret = server_create($2, $3);
 		free($2);
 		free($3);
+
+		if (ret)
+			YYABORT;
 	}
 	;
 

@@ -100,13 +100,16 @@ void vm_program_fini(struct vm_program *vprg);
  */
 int vm_program_check(struct vm_program *vprg);
 
+
 /**
- upload program in the kernel
- 
- @retval 0 - OK
- @retval <0 - error hit
+ find progmram for vm by name
  */
-int vm_program_upload(struct vm_program *vprg);
+struct vm_program *vm_program_find(char *name);
+
+/**
+ destroy all existent programs for virtual machine
+ */
+void vm_programs_fini(void);
 
 
 /**

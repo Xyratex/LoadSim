@@ -42,12 +42,17 @@ enum simul_ops {
 	SIM_IOW_STATS,
 };
 
+#ifndef __user
+#define __user
+#endif
+
 /**
  parameters for 
  */
 struct simul_ioctl_cli {
 	char __user	*sic_name;
-	char __user	*sic_dst;
+	char __user	*sic_dst_uuid;
+	char __user	*sic_dst_nid;
 	int		sic_programsz;
 	char __user	*sic_program;
 };

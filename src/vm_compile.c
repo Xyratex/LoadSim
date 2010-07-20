@@ -147,7 +147,6 @@ void vm_program_fini(struct vm_program *vprg)
 {
 	DPRINT("%s", "program destroyed\n");
 
-	list_del(&vprg->vmp_link);
 	vm_labels_fini(vprg);
 	free(vprg->vmp_data);
 	free(vprg->vmp_name);
@@ -167,12 +166,27 @@ int vm_program_check(struct vm_program *vprg)
 	return 0;
 }
 
-int vm_program_upload(struct vm_program *vprg)
+struct vm_program *vm_program_find(char *name)
 {
-	DPRINT("upload program into kernel\n");
+	struct vm_program *pos;
 
-	/** XXX kernel API */
-	return 0;
+	list_for_each_entry(pos, &vm_programs, vmp_link) {
+		if (strcasecmp(pos->vmp_name, name) == 0)
+			return pos;
+	}
+	return NULL;
+}
+
+void vm_programs_fini()
+{
+	struct vm_program *pos;
+	struct vm_program *tmp;
+
+	list_for_each_entry_safe(pos, tmp, &vm_programs, vmp_link) {
+		list_del(&pos->vmp_link);
+		vm_program_fini(pos);
+	}
+
 }
 
 

@@ -1,3 +1,11 @@
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <errno.h>
+
+#include "kapi.h"
+
 static int api_fd = -1;
 
 int simul_api_open()
@@ -11,12 +19,17 @@ int simul_api_open()
 
 int simul_api_cli_create(char *name, char *dstnid, void *data, int size)
 {
-	struct simul_ioctl_cli data;
+	struct simul_ioctl_cli _data;
 
 	if (api_fd == -1)
 		return -ENOSYS;
 
-	return ioctl(api_fd, MDSIM_IOW_CLIENT, &data);
+	return ioctl(api_fd, SIM_IOW_MDCLIENT, &_data);
+}
+
+int simul_api_run()
+{
+	return ioctl(api_fd, SIM_IOW_RUN, NULL);
 }
 
 int simul_api_wait_finished()
@@ -29,7 +42,7 @@ int simul_api_get_results(long *res)
 	if (api_fd == -1)
 		return -ENOSYS;
 
-	return ioctl(api_fd, MDSIM_IOW_RESULTS, &data);
+	return ioctl(api_fd, SIM_IOW_RESULTS, res);
 }
 
 int simul_api_close()

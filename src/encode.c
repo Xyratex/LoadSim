@@ -3,7 +3,6 @@
 
 #include "encode.h"
 #include "vm_defs.h"
-#include "md_api.h"
 #include "vm_compile.h"
 
 /**
@@ -23,7 +22,7 @@ int encode_cd(struct vm_program *vprg, char *dir)
 	if (ret)
 		return ret;
 
-	arg.cd_call = VM_CALL_CD;
+	arg.cd_call = VM_MD_CALL_CD;
 	return vm_encode(vprg, VM_CMD_CALL, arg);
 }
 
@@ -37,7 +36,7 @@ int encode_mkdir(struct vm_program *vprg,char *dir)
 	if (ret)
 		return ret;
 
-	arg.cd_call = VM_CALL_MKDIR;
+	arg.cd_call = VM_MD_CALL_MKDIR;
 	return vm_encode(vprg, VM_CMD_CALL, arg);
 }
 
@@ -51,7 +50,7 @@ int encode_readdir(struct vm_program *vprg,char *dir)
 	if (ret)
 		return ret;
 
-	arg.cd_call = VM_CALL_READIR;
+	arg.cd_call = VM_MD_CALL_READIR;
 	return vm_encode(vprg, VM_CMD_CALL, arg);
 }
 
@@ -65,7 +64,7 @@ int encode_unlink(struct vm_program *vprg, char *name)
 	if (ret)
 		return ret;
 
-	arg.cd_call = VM_CALL_UNLINK;
+	arg.cd_call = VM_MD_CALL_UNLINK;
 	return vm_encode(vprg, VM_CMD_CALL, arg);
 }
 
@@ -95,7 +94,7 @@ int encode_open(struct vm_program *vprg, char *name, int flags, int reg)
 	if (ret)
 		return ret;
 
-	arg.cd_call = VM_CALL_OPEN;
+	arg.cd_call = VM_MD_CALL_OPEN;
 	return vm_encode(vprg, VM_CMD_CALL, arg);
 }
 
@@ -109,7 +108,7 @@ int encode_close(struct vm_program *vprg, int reg)
 	if (ret)
 		return ret;
 
-	arg.cd_call = VM_CALL_CLOSE;
+	arg.cd_call = VM_MD_CALL_CLOSE;
 	return vm_encode(vprg, VM_CMD_CALL, arg);
 }
 
@@ -123,7 +122,7 @@ int encode_stat(struct vm_program *vprg, char *name)
 	if (ret)
 		return ret;
 
-	arg.cd_call = VM_CALL_STAT;
+	arg.cd_call = VM_MD_CALL_STAT;
 	return vm_encode(vprg, VM_CMD_CALL, arg);
 }
 
@@ -142,7 +141,7 @@ int encode_setattr(struct vm_program *vprg, char *name, int flags)
 	if (ret)
 		return ret;
 
-	arg.cd_call = VM_CALL_SETATTR;
+	arg.cd_call = VM_MD_CALL_SETATTR;
 	return vm_encode(vprg, VM_CMD_CALL, arg);
 }
 
@@ -161,7 +160,7 @@ int encode_softlink(struct vm_program *vprg, char *old, char *new)
 	if (ret)
 		return ret;
 
-	arg.cd_call = VM_CALL_SOFTLINK;
+	arg.cd_call = VM_MD_CALL_SOFTLINK;
 	return vm_encode(vprg, VM_CMD_CALL, arg);
 }
 
@@ -180,7 +179,7 @@ int encode_hardlink(struct vm_program *vprg, char *old, char *new)
 	if (ret)
 		return ret;
 
-	arg.cd_call = VM_CALL_SOFTLINK;
+	arg.cd_call = VM_MD_CALL_SOFTLINK;
 	return vm_encode(vprg, VM_CMD_CALL, arg);
 }
 
@@ -194,7 +193,7 @@ int encode_readlink(struct vm_program *vprg,char *name)
 	if (ret)
 		return ret;
 
-	arg.cd_call = VM_CALL_READLINK;
+	arg.cd_call = VM_MD_CALL_READLINK;
 	return vm_encode(vprg, VM_CMD_CALL, arg);
 }
 
@@ -351,12 +350,6 @@ int procedure_end(void)
 		return ret;
 
 	ret = vm_program_check(vprg);
-#if 0
-	{
-	    FILE *f = fopen(vprg->vmp_name,"wb+");
-	    fwrite(vprg->vmp_data, vprg->vmp_enc_idx, 1, f);
-	    fclose(f);
-	}
-#endif
+
 	return ret;
 }

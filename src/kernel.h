@@ -18,11 +18,12 @@ int simul_api_open(void);
  create one test client and upload on it.
 
  */
-int simul_api_cli_create(char *name, char *dstnid, void *data, int size)
+int simul_api_cli_create(char *name, char *dstnid, void *data, int size);
 
 /**
  run programs on all clients
  */
+int simul_api_run(void);
  
 /**
  waiting until all programs is finished

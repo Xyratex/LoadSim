@@ -1,6 +1,8 @@
 #ifndef _MD_CLIENT_H_
 #define _MD_CLIENT_H_
 
+#include "list.h"
+
 /**
  connection to meta-data server
 */
