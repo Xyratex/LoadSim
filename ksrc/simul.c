@@ -5,8 +5,8 @@
 #include <linux/fs.h>
 #include <linux/miscdevice.h>
 
-#include "../include/kapi.h"
-#include "../include/vm_defs.h" /* register / unregister */
+#include "kapi.h"
+#include "vm_defs.h" /* register / unregister */
 #include "vm_api.h"
 #include "md_env.h"
 

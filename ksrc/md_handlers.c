@@ -1,4 +1,4 @@
-#include "../include/vm_defs.h"
+#include "vm_defs.h"
 #include "vm_api.h"
 #include "md_env.h"
 

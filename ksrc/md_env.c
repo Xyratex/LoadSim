@@ -2,8 +2,8 @@
 #include <linux/slab.h>
 
 #include "md_env.h"
-#include "../include/kapi.h"
-#include "../include/vm_defs.h"
+#include "kapi.h"
+#include "vm_defs.h"
 #include "vm_api.h"
 
 static LIST_HEAD(md_clients);

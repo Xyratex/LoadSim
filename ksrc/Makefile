@@ -6,9 +6,10 @@ ifneq ($(KERNELRELEASE),)
 else
     KDIR        := /lib/modules/$(shell uname -r)/build/
     PWD         := $(shell pwd)
+    ROOT	:= $(shell cd ..; pwd)
 
 debug:
-	$(MAKE) -C $(KDIR) SUBDIRS=$(PWD) EXTRA_CFLAGS="-g" modules 
+	$(MAKE) -C $(KDIR) SUBDIRS=$(PWD) EXTRA_CFLAGS="-g -I $(ROOT)/include/" modules 
 
 default: 
 	$(MAKE) -C $(KDIR) SUBDIRS=$(PWD) modules 

@@ -4,7 +4,7 @@
 #include <linux/errno.h>
 
 #include "fifo.h"
-#include "../include/vm_defs.h"
+#include "vm_defs.h"
 #include "vm_api.h"
 #include "vm_core.h"
 

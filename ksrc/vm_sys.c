@@ -3,7 +3,7 @@
 #include <linux/sched.h>
 
 #include "fifo.h"
-#include "../include/vm_defs.h"
+#include "vm_defs.h"
 #include "vm_api.h"
 
 /**
