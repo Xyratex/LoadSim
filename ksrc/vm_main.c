@@ -61,9 +61,24 @@ void vm_interpret_fini(struct stack_vm *vm)
 	kfree(vm);
 }
 
+static vm_int_fn int_fn[VM_CMD_MAX] = {
+	[VM_CMD_PUSHS] = vm_pushs,
+	[VM_CMD_PUSHL] = vm_pushl,
+	[VM_CMD_CMPS]  = vm_cmps,
+	[VM_CMD_CMPL]  = vm_cmpl,
+	[VM_CMD_CALL]  = vm_call,
+	[VM_CMD_GOTO]  = vm_goto,
+	[VM_CMD_JZ]    = vm_jz,
+	[VM_CMD_ADD]   = vm_add,
+	[VM_CMD_SUB]   = vm_sub,
+	[VM_CMD_DUP]   = vm_dup,
+	[VM_CMD_NOP]   = vm_nop,
+};
+
+
 int vm_interpret_run(struct stack_vm *vm)
 {
-	char op;
+	unsigned char op;
 	int rc = -ENODATA;
 	long old_ip;
 
@@ -71,45 +86,13 @@ int vm_interpret_run(struct stack_vm *vm)
 	while(vm->sv_ip < vm->sv_size) {
 		old_ip = vm->sv_ip;
 		op = vm->sv_program[vm->sv_ip ++];
-		switch (op) {
-		case VM_CMD_PUSHS:
-			rc = vm_pushs(vm, &vm->sv_program[vm->sv_ip]);
-			break;
-		case VM_CMD_PUSHL:
-			rc = vm_pushl(vm, &vm->sv_program[vm->sv_ip]);
-			break;
-		case VM_CMD_CMPS:
-			rc = vm_cmps(vm, &vm->sv_program[vm->sv_ip]);
-			break;
-		case VM_CMD_CMPL:
-			rc = vm_cmpl(vm, &vm->sv_program[vm->sv_ip]);
-			break;
-		case VM_CMD_CALL:
-			rc = vm_call(vm, &vm->sv_program[vm->sv_ip]);
-			break;
-		case VM_CMD_GOTO:
-			rc = vm_goto(vm, &vm->sv_program[vm->sv_ip]);
-			break;
-		case VM_CMD_JZ:
-			rc = vm_jz(vm, &vm->sv_program[vm->sv_ip]);
-			break;
-		case VM_CMD_ADD:
-			rc = vm_add(vm, &vm->sv_program[vm->sv_ip]);
-			break;
-		case VM_CMD_SUB:
-			rc = vm_sub(vm, &vm->sv_program[vm->sv_ip]);
-			break;
-		case VM_CMD_DUP:
-			rc = vm_dup(vm, &vm->sv_program[vm->sv_ip]);
-			break;
-		case VM_CMD_NOP:
-			rc = vm_nop(vm, &vm->sv_program[vm->sv_ip]);
-			break;
-		default:
+		printk("op %d\n", op);
+		if ((op > ARRAY_SIZE(int_fn)) || (int_fn[op] == NULL)) {
 			printk(KERN_ERR "unknow op (%c) !\n", op);
 			rc = -EINVAL;
-			break;
-		};
+		} else {
+			rc = int_fn[op](vm, &vm->sv_program[vm->sv_ip]);
+		}
 		if (rc) {
 			/* if operation failed  - restore pointer to operation */
 			vm->sv_ip = old_ip;

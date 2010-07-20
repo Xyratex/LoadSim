@@ -3,6 +3,12 @@
 
 struct stack_vm;
 
+/**
+ prototype for core functions
+ */
+typedef int (* vm_int_fn)(struct stack_vm *vm, void *args);
+
+
 /** 
  push pointer to string
  VM_CMD_PUSHS

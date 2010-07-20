@@ -18,6 +18,7 @@ static int client_thread(void *data)
 {
 	complete(&start);
 	/* wait until run event */
+	printk("thread run\n");
 	vm_interpret_run(data);
 
 	return 0;
@@ -31,6 +32,7 @@ static int mdclient_create(struct simul_ioctl_cli *data)
 	struct task_struct *p;
 
 	rc = md_client_create(&env, data);
+	printk("cli create %d - %p\n", rc, env);
 	if (rc < 0)
 		return rc;
 
