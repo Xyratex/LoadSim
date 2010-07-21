@@ -7,35 +7,35 @@ enum {
 
 enum cmd_base {
 	/* push pointer to string */
-	VM_CMD_PUSHS,
+	VM_CMD_PUSHS	= 0,
 	/* push long */
-	VM_CMD_PUSHL,
+	VM_CMD_PUSHL	= 1,
 	/* compare string, result on top fifo */
-	VM_CMD_CMPS,
+	VM_CMD_CMPS	= 2,
 	/* compare long's, result on top fifo */
-	VM_CMD_CMPL,
+	VM_CMD_CMPL	= 3,
 	/* call handler, function id on top fifo */
-	VM_CMD_CALL,
+	VM_CMD_CALL	= 4,
 	/* goto, address on top of stack */
-	VM_CMD_GOTO,
+	VM_CMD_GOTO	= 5,
 	/* conditional jump, results on top of stack */
-	VM_CMD_JZ,
+	VM_CMD_JZ	= 6,
 	/* */
-	VM_CMD_ADD,
+	VM_CMD_ADD	= 7,
 	/* */
-	VM_CMD_SUB,
+	VM_CMD_SUB	= 8,
 	/* duplicate data on stack top */
-	VM_CMD_DUP,
+	VM_CMD_DUP	= 9,
 	/* just remove entry on stack top */
-	VM_CMD_NOP,
+	VM_CMD_NOP	= 10,
 	VM_CMD_MAX,
 };
 
 enum vm_sys_calls {
 	VM_SYS_USER	= 0,
-	VM_SYS_GROUP,
-	VM_SYS_SLEEP,
-	VM_SYS_RACE,
+	VM_SYS_GROUP	= 1,
+	VM_SYS_SLEEP	= 2,
+	VM_SYS_RACE	= 3,
 	VM_SYS_CALL_MAX
 };
 
@@ -47,17 +47,17 @@ void sys_handlers_unregister(void);
  procedures called via VM_CMD_CALL function
  */
 enum vm_md_calls {
-	VM_MD_CALL_CD	= 100,
-	VM_MD_CALL_MKDIR,
-	VM_MD_CALL_READIR,
-	VM_MD_CALL_UNLINK,
-	VM_MD_CALL_OPEN,
-	VM_MD_CALL_CLOSE,
-	VM_MD_CALL_STAT,
-	VM_MD_CALL_SETATTR,
-	VM_MD_CALL_SOFTLINK,
-	VM_MD_CALL_HARDLINK,
-	VM_MD_CALL_READLINK,
+	VM_MD_CALL_CD		= 100,
+	VM_MD_CALL_MKDIR	= 101,
+	VM_MD_CALL_READIR	= 102,
+	VM_MD_CALL_UNLINK	= 103,
+	VM_MD_CALL_OPEN		= 104,
+	VM_MD_CALL_CLOSE	= 105,
+	VM_MD_CALL_STAT		= 106,
+	VM_MD_CALL_SETATTR	= 107,
+	VM_MD_CALL_SOFTLINK	= 108,
+	VM_MD_CALL_HARDLINK	= 109,
+	VM_MD_CALL_READLINK	= 110,
 	VM_MD_CALL_MAX,
 };
 
