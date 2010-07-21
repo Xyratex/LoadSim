@@ -2,7 +2,9 @@
 #define _STACK_VM_DEFS_H_
 
 enum {
-	VM_DEF_STACK = 20
+	VM_DEF_STACK = 20,
+	VM_RET_OK    = 0,
+	VM_RET_FAIL  = 1,
 };
 
 enum cmd_base {

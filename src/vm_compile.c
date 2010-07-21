@@ -260,7 +260,7 @@ static add_string_to_buffer(struct vm_program *vprg, char *str)
 	int i;
 	int len;
 
-	len = strlen(str);
+	len = strlen(str) + 1;
 	for(i = 0; i < len; i++) {
 		if (add_byte_to_buffer(vprg, str[i]))
 			return -ENOMEM;

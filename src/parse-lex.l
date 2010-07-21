@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "parse-gram.h"
+#include "vm_defs.h"
 %}
 
 BLANK           [ \t]
@@ -64,9 +65,9 @@ ID		{alpha}({alpha}|{digit})+
 {EXPECTED}	return TOK_EXPECTED;
 {EXPECT_STAT}	{ 
 		    if (strcasecmp(yytext, "OK") == 0)
-			yylval.intval = 1;
+			yylval.intval = VM_RET_OK;
 		    else
-			yylval.intval = 0;
+			yylval.intval = VM_RET_FAIL;
 
 		    return TOK_EXP_STATUS;
 		}
