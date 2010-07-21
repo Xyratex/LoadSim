@@ -29,6 +29,7 @@ int yywrap()
 %token TOK_MKDIR_CMD TOK_READDIR_CMD
 %token TOK_SOFTLINK_CMD TOK_HARDLINK_CMD TOK_READLINK_CMD
 
+%token TOK_UID TOK_GID
 %token TOK_WAITRACE_CMD TOK_SLEEP_CMD
 
 %token TOK_EXPECTED
@@ -197,6 +198,8 @@ loop_end:
 misc_ops:
 	  wait_race
 	| sleep
+	| chuid
+	| chgid
 	;
 
 /**
@@ -207,6 +210,13 @@ misc_ops:
  */
 wait_race:
 	TOK_WAITRACE_CMD TOK_NUMBER
+	{
+		int ret;
+
+		ret = encode_race(procedure_current(), $2);
+		if (ret)
+			YYABORT;
+	}
 	;
 
 /**
@@ -217,6 +227,35 @@ wait_race:
  */
 sleep:
 	TOK_SLEEP_CMD TOK_NUMBER
+	{
+		int ret;
+
+		ret = encode_sleep(procedure_current(), $2);
+		if (ret)
+			YYABORT;
+	}
+	;
+
+chuid:
+	TOK_UID	TOK_NUMBER
+	{
+		int ret;
+
+		ret = encode_user(procedure_current(), $2);
+		if (ret)
+			YYABORT;
+	}
+	;
+
+chgid:
+	TOK_UID	TOK_NUMBER
+	{
+		int ret;
+
+		ret = encode_group(procedure_current(), $2);
+		if (ret)
+			YYABORT;
+	}
 	;
 
 /**
@@ -273,7 +312,13 @@ md_cmd:
 mkdir_cmd:
 	TOK_MKDIR_CMD quoted_name
 	{
+		int ret;
+
+		ret = encode_mkdir(procedure_current(), $2);
 		free($2);
+
+		if (ret)
+			YYABORT;
 	}
 
 /**
@@ -304,7 +349,15 @@ cd_cmd:
  */
 readdir_cmd:
 	TOK_READDIR_CMD quoted_name
-	;
+	{
+		int ret;
+
+		ret = encode_readdir(procedure_current(), $2);
+		free($2);
+
+		if (ret)
+			YYABORT;
+	}
 
 /**
  remove file of directory

@@ -8,6 +8,10 @@ struct vm_program;
 /**
  functions to convert into asm code
  */
+ 
+/**
+ VM_MD_CALL
+ */
 int encode_cd(struct vm_program *prg, char *dir);
 int encode_mkdir(struct vm_program *prg, char *dir);
 int encode_readdir(struct vm_program *prg, char *dir);
@@ -20,14 +24,17 @@ int encode_softlink(struct vm_program *prg, char *old, char *new);
 int encode_hardlink(struct vm_program *prg, char *old, char *new);
 int encode_readlink(struct vm_program *prg, char *name);
 
-int encode_loop_do(struct vm_program *prg);
-int encode_loop_loop(struct vm_program *prg, int num);
-int encode_expected(struct vm_program *prg, int val);
 
+/* VM_SYS */
 int encode_user(struct vm_program *prg, int uid);
 int encode_group(struct vm_program *prg, int gid);
 int encode_sleep(struct vm_program *prg, int ms);
 int encode_race(struct vm_program *prg, int raceid);
+
+/* specials */
+int encode_loop_do(struct vm_program *prg);
+int encode_loop_loop(struct vm_program *prg, int num);
+int encode_expected(struct vm_program *prg, int val);
 
 int procedure_start(char *name);
 struct vm_program *procedure_current(void);

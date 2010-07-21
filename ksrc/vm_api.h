@@ -66,6 +66,8 @@ struct stack_vm {
  \retval 0 - interperter fully init
  \retval -ENOMEM - not have memory
  \retval <0 - other errors
+
+ if initialization failed, vm pointer set to NULL.
  */
 int vm_interpret_init(struct stack_vm **vm, int stack_size,
 		      char __user *prg, int size, void *env);

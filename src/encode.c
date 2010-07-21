@@ -196,6 +196,64 @@ int encode_readlink(struct vm_program *vprg,char *name)
 	arg.cd_call = VM_MD_CALL_READLINK;
 	return vm_encode(vprg, VM_CMD_CALL, arg);
 }
+/** **/
+int encode_user(struct vm_program *vprg, int uid)
+{
+	int ret;
+	union cmd_arg arg;
+
+	arg.cd_long = uid;
+	ret = vm_encode(vprg, VM_CMD_PUSHL, arg);
+	if (ret)
+		return ret;
+
+	arg.cd_call = VM_SYS_USER;
+	return vm_encode(vprg, VM_CMD_CALL, arg);
+
+}
+
+int encode_group(struct vm_program *vprg, int gid)
+{
+	int ret;
+	union cmd_arg arg;
+
+	arg.cd_long = gid;
+	ret = vm_encode(vprg, VM_CMD_PUSHL, arg);
+	if (ret)
+		return ret;
+
+	arg.cd_call = VM_SYS_GROUP;
+	return vm_encode(vprg, VM_CMD_CALL, arg);
+}
+
+int encode_sleep(struct vm_program *vprg, int ms)
+{
+	int ret;
+	union cmd_arg arg;
+
+	arg.cd_long = ms;
+	ret = vm_encode(vprg, VM_CMD_PUSHL, arg);
+	if (ret)
+		return ret;
+
+	arg.cd_call = VM_SYS_SLEEP;
+	return vm_encode(vprg, VM_CMD_CALL, arg);
+}
+
+int encode_race(struct vm_program *vprg, int raceid)
+{
+	int ret;
+	union cmd_arg arg;
+
+	arg.cd_long = raceid;
+	ret = vm_encode(vprg, VM_CMD_PUSHL, arg);
+	if (ret)
+		return ret;
+
+	arg.cd_call = VM_SYS_RACE;
+	return vm_encode(vprg, VM_CMD_CALL, arg);
+}
+
 
 /****/
 #define LOOP_ST_LABEL "loop_st%u:"

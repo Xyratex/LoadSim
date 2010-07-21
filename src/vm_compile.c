@@ -376,7 +376,7 @@ const static enc_h_t en_helpers[VM_CMD_MAX] = {
 	[VM_CMD_NOP]	= enc_nop,
 };
 
-int vm_encode(struct vm_program *vprg, enum cmd_base cmd, union cmd_arg data)
+int vm_encode(struct vm_program *vprg, enum vm_cmd cmd, union cmd_arg data)
 {
 	int rc;
 

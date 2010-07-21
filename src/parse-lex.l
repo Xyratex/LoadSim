@@ -44,6 +44,8 @@ SOFTLINK	[s][o][f][t][l][i][n][k]
 HARDLINK	[h][a][r][d][l][i][n][k]
 READLINK	[r][e][a][d][l][i][n][k]
 
+UID		[u][i][d]
+GID		[g][i][d]
 WAITRACE	[w][a][i][t][_][r][a][c][e]
 SLEEP		[s][l][e][e][p]
 
@@ -86,6 +88,8 @@ ID		{alpha}({alpha}|{digit})+
 
 {SLEEP}		return TOK_SLEEP_CMD;
 {WAITRACE}	return TOK_WAITRACE_CMD;
+{UID}		return TOK_UID;
+{GID}		return TOK_GID;
 
 {CLIENT}	return TOK_CLIENT;
 {SERVER}	return TOK_SERVER;

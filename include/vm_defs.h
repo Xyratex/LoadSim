@@ -26,7 +26,7 @@ enum {
  \retval 0 if operation executed correctly (has enough resources, arguments, etc)
  \retval <0 if operation hit fatail error, and execution should be stoped at that point.
  */
-enum system_cmd {
+enum vm_cmd {
 	/* push pointer to string */
 	VM_CMD_PUSHS	= 0,
 	/* push long */

@@ -128,7 +128,7 @@ union cmd_arg {
  @param cmd - command
  @param data - command arguments
  */
-int vm_encode(struct vm_program *vprg, enum cmd_base cmd, union cmd_arg data);
+int vm_encode(struct vm_program *vprg, enum vm_cmd cmd, union cmd_arg data);
 
 /**
  add label to the list and fix all jump point to using correct address.
