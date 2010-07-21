@@ -1,0 +1,20 @@
+procedure test1
+	loop 5
+		unlink "file" expected OK
+		cd "path2" expected OK
+	endloop
+	sleep 10
+endproc
+
+procedure test2
+	wait_race 2
+endproc
+
+procedure test3
+	wait_race 2
+endproc
+
+server MDS0 1.2.3.4@tcp
+
+client CLI0 test1
+
