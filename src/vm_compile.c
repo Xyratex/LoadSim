@@ -12,26 +12,32 @@ enum {
 	VM_LABEL_NEW = -1
 };
 
+static int label_add_wait(struct vm_program *vprg, struct vm_label *label,
+			  char *name)
+{
+	struct vm_label_wait *w;
+
+	w = malloc(sizeof *w);
+	if (w == NULL)
+		return -ENOMEM;
+	w->vlw_addr = (long *)&vprg->vmp_data[vprg->vmp_enc_idx];
+	list_add(&w->vlw_link, &label->vl_waits);
+
+	return 0;
+}
+
 /**
  try to find label by name or allocate new
  */
-static struct vm_label *vm_label_find(struct vm_program *vprg, char *name)
+static struct vm_label *label_find(struct vm_program *vprg, char *name)
 {
 	struct vm_label *ret;
-	struct vm_label_wait *w;
 
 	list_for_each_entry(ret, &vprg->vmp_labels, vl_link) {
 		if (strcasecmp(ret->vl_name, name) == 0) {
 			/* forward reference to label.
 			   create new wait reference.
 			 */
-			if (ret->vl_addr == VM_LABEL_NEW) {
-				w = malloc(sizeof *w);
-				if (w == NULL)
-					return NULL;
-				w->vlw_addr = (long *)&vprg->vmp_data[vprg->vmp_enc_idx];
-				list_add(&w->vlw_link, &ret->vl_waits);
-			}
 			return ret;
 		}
 	}
@@ -53,6 +59,27 @@ static struct vm_label *vm_label_find(struct vm_program *vprg, char *name)
 	return ret;
 }
 
+/**
+ find for goto/jz/..etc
+ if label not resolved - create a new wait point
+ */
+static struct vm_label *vm_label_find(struct vm_program *vprg, char *name)
+{
+	struct vm_label *ret;
+
+	ret = label_find(vprg, name);
+	if (ret == NULL)
+		return NULL;
+
+	if (ret->vl_addr == VM_LABEL_NEW) {
+		if (label_add_wait(vprg, ret, name) < 0)
+			return NULL;
+	}
+
+	return ret;
+}
+
+
 int vm_label_resolve(struct vm_program *vprg, char *label_name)
 {
 	struct vm_label *label;
@@ -61,7 +88,7 @@ int vm_label_resolve(struct vm_program *vprg, char *label_name)
 
 	DPRINT("resolve label %s\n", label_name);
 
-	label = vm_label_find(vprg, label_name);
+	label = label_find(vprg, label_name);
 	if (label == NULL)
 		return -ENOMEM;
 
