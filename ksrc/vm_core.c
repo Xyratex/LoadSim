@@ -12,7 +12,7 @@
 int vm_pushs(struct stack_vm *vm, void *args)
 {
 	DPRINT("pushs\n");
-	vm->sv_ip += strlen(args);
+	vm->sv_ip += strlen(args) + 1;
 
 	return fifo_push(vm->sv_stack, (long)args);
 }

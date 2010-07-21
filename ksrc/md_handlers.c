@@ -1,6 +1,9 @@
+#include <linux/errno.h>
+
 #include "vm_defs.h"
 #include "vm_api.h"
 #include "md_env.h"
+#include "fifo.h"
 
 /**
 	VM_CALL_CD
@@ -9,7 +12,13 @@
 */
 static int md_call_cd(void *env, struct fifo *f, uint32_t *ip)
 {
-	return 0;
+	long ret = VM_RET_OK;
+	char *dirname;
+
+	if (fifo_pop(f, (long *)&dirname))
+		return -ENODATA;
+
+	return fifo_push(f, ret);
 }
 
 /**
@@ -17,7 +26,13 @@ static int md_call_cd(void *env, struct fifo *f, uint32_t *ip)
 */
 static int md_call_mkdir(void *env, struct fifo *f, uint32_t *ip)
 {
-	return 0;
+	long ret = VM_RET_OK;
+	char *dirname;
+
+	if (fifo_pop(f, (long *)&dirname))
+		return -ENODATA;
+
+	return fifo_push(f, ret);
 }
 
 /**
@@ -26,7 +41,9 @@ static int md_call_mkdir(void *env, struct fifo *f, uint32_t *ip)
 */
 static int md_call_readdir(void *env, struct fifo *f, uint32_t *ip)
 {
-	return 0;
+	long ret = VM_RET_OK;
+
+	return fifo_push(f, ret);
 }
 
 /**
@@ -34,7 +51,13 @@ static int md_call_readdir(void *env, struct fifo *f, uint32_t *ip)
 */
 static int md_call_unlink(void *env, struct fifo *f, uint32_t *ip)
 {
-	return 0;
+	long ret = VM_RET_OK;
+	char *name;
+
+	if (fifo_pop(f, (long *)&name))
+		return -ENODATA;
+
+	return fifo_push(f, ret);
 }
 
 /**
@@ -42,7 +65,9 @@ static int md_call_unlink(void *env, struct fifo *f, uint32_t *ip)
 */
 static int md_call_open(void *env, struct fifo *f, uint32_t *ip)
 {
-	return 0;
+	long ret = VM_RET_OK;
+
+	return fifo_push(f, ret);
 }
 
 /**
@@ -50,7 +75,9 @@ static int md_call_open(void *env, struct fifo *f, uint32_t *ip)
 */
 static int md_call_close(void *env, struct fifo *f, uint32_t *ip)
 {
-	return 0;
+	long ret = VM_RET_OK;
+
+	return fifo_push(f, ret);
 }
 
 
@@ -59,7 +86,9 @@ static int md_call_close(void *env, struct fifo *f, uint32_t *ip)
 */
 static int md_call_stat(void *env, struct fifo *f, uint32_t *ip)
 {
-	return 0;
+	long ret = VM_RET_OK;
+
+	return fifo_push(f, ret);
 }
 
 /**
@@ -67,7 +96,9 @@ static int md_call_stat(void *env, struct fifo *f, uint32_t *ip)
 */
 static int md_call_setattr(void *env, struct fifo *f, uint32_t *ip)
 {
-	return 0;
+	long ret = VM_RET_OK;
+
+	return fifo_push(f, ret);
 }
 
 /**
@@ -75,7 +106,9 @@ static int md_call_setattr(void *env, struct fifo *f, uint32_t *ip)
 */
 static int md_call_softlink(void *env, struct fifo *f, uint32_t *ip)
 {
-	return 0;
+	long ret = VM_RET_OK;
+
+	return fifo_push(f, ret);
 }
 
 /**
@@ -83,7 +116,9 @@ static int md_call_softlink(void *env, struct fifo *f, uint32_t *ip)
 */
 static int md_call_hardlink(void *env, struct fifo *f, uint32_t *ip)
 {
-	return 0;
+	long ret = VM_RET_OK;
+
+	return fifo_push(f, ret);
 }
 
 /**
@@ -91,7 +126,9 @@ static int md_call_hardlink(void *env, struct fifo *f, uint32_t *ip)
 */
 static int md_call_readlink(void *env, struct fifo *f, uint32_t *ip)
 {
-	return 0;
+	long ret = VM_RET_OK;
+
+	return fifo_push(f, ret);
 }
 
 

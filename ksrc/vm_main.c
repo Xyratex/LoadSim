@@ -88,18 +88,21 @@ int vm_interpret_run(struct stack_vm *vm)
 	unsigned char op;
 	int rc = -ENODATA;
 	long old_ip;
+	int i = 0;
 
 	vm->sv_run = 1;
 	while(vm->sv_ip < vm->sv_size) {
 		old_ip = vm->sv_ip;
 		op = vm->sv_program[vm->sv_ip ++];
-		printk("op %d\n", op);
+		printk("trace %lx op %d\n", old_ip, op);
 		if ((op > ARRAY_SIZE(int_fn)) || (int_fn[op] == NULL)) {
 			err_print("unknow op (%c) !\n", op);
 			rc = -EINVAL;
 		} else {
 			rc = int_fn[op](vm, &vm->sv_program[vm->sv_ip]);
 		}
+		if (i++ > 25)
+			break;
 		if (rc) {
 			/* if operation failed  - restore pointer to operation */
 			err_print("operation %c (%u) - fail %d\n",

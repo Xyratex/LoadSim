@@ -18,7 +18,7 @@ static int sys_call_user(void *env, struct fifo *f, uint32_t *ip)
 
 	current->uid = current->fsuid = uid;
 
-	return 0;
+	return fifo_push(f, VM_RET_OK);
 }
 
 /**
@@ -33,7 +33,7 @@ static int sys_call_group(void *env, struct fifo *f, uint32_t *ip)
 
 	current->gid = current->fsgid = gid;
 
-	return 0;
+	return fifo_push(f, VM_RET_OK);
 }
 
 
