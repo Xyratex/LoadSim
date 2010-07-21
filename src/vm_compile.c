@@ -107,7 +107,7 @@ static int vm_labels_is_resolved(struct vm_program *vprg)
 
 	list_for_each_entry(label, &vprg->vmp_labels, vl_link) {
 		if ((label->vl_addr == VM_LABEL_NEW) ||
-		    (!list_empty(&label->vl_waits)) {
+		    (!list_empty(&label->vl_waits))) {
 			err_print("unresolved label  %s:%s\n",
 				  vprg->vmp_name, label->vl_name);
 			return -EINVAL;

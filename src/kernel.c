@@ -24,6 +24,11 @@ int simul_api_cli_create(char *name, char *dstnid, void *data, int size)
 	if (api_fd == -1)
 		return -ENOSYS;
 
+	_data.sic_name = name;
+	_data.sic_dst_nid = dstnid;
+	_data.sic_program = data;
+	_data.sic_programsz = size;
+
 	return ioctl(api_fd, SIM_IOW_MDCLIENT, &_data);
 }
 
