@@ -2,12 +2,31 @@
 #define _STACK_VM_DEFS_H_
 
 enum {
+	/** default stack size */
 	VM_DEF_STACK = 20,
+	/**
+	 function finished OK
+	*/
 	VM_RET_OK    = 0,
+	/**
+	 function finished with error
+	*/
 	VM_RET_FAIL  = 1,
 };
 
-enum cmd_base {
+/**
+ system commands for virtual machine.
+ each system command has prototype
+
+ long foo(struct stack_vm *vm, void *args);
+
+ \arg vm - pointer to virtual machine to execute that operation
+ \arg args - pointer to some area which store arguments for that operation.
+ 
+ \retval 0 if operation executed correctly (has enough resources, arguments, etc)
+ \retval <0 if operation hit fatail error, and execution should be stoped at that point.
+ */
+enum system_cmd {
 	/* push pointer to string */
 	VM_CMD_PUSHS	= 0,
 	/* push long */
@@ -20,13 +39,13 @@ enum cmd_base {
 	VM_CMD_CALL	= 4,
 	/* goto, address on top of stack */
 	VM_CMD_GOTO	= 5,
-	/* conditional jump, results on top of stack */
+	/* jump if equal or zero, results on top of stack */
 	VM_CMD_JZ	= 6,
 	/* jump if not zero or equal*/
 	VM_CMD_JNZ	= 7,
-	/* */
+	/* a + b */
 	VM_CMD_ADD	= 8,
-	/* */
+	/* a - b */
 	VM_CMD_SUB	= 9,
 	/* duplicate data on stack top */
 	VM_CMD_DUP	= 10,
@@ -35,38 +54,130 @@ enum cmd_base {
 	VM_CMD_MAX,
 };
 
+
+/**
+ in additional to system commands, virtual machine
+ has a many functions called via VM_CMD_CALL system command.
+ each additional system function has prototype:
+
+ \arg env constant pointer to enviroment passed when VM created
+ \arg f fifo with data. NOTE arguments are stored in reverse order,
+        so a - b stored as [top][a][b][bottom]
+ \arg ip instruction pointer, need if function want change execution order
+
+ \retval 0 if function executed correctly
+ \retval <0 if fatal error hit
+ int foo_call(void *env, struct fifo *f, uint32_t *ip)
+
+ each function get a parameters from a top of stack and must put a result
+ 
+ typical implementation
+int foo(void *env, struct fifo *f, uint32_t *ip)
+{
+	long gid;
+
+	if (fifo_pop(f, &gid))
+		return -ENODATA;
+
+	current->gid = current->fsgid = gid;
+	return fifo_push(f, VM_RET_OK);
+}
+*/
+
+/**
+ generic system calls
+*/
 enum vm_sys_calls {
+	/**
+	 change uid for current thread
+	 */
 	VM_SYS_USER	= 0,
+	/**
+	 change gid for current thread
+	*/
 	VM_SYS_GROUP	= 1,
+	/**
+	 delay execution for some time
+	 */
 	VM_SYS_SLEEP	= 2,
+	/**
+	 simulate race between threads
+	 */
 	VM_SYS_RACE	= 3,
 	VM_SYS_CALL_MAX
 };
 
+/**
+ register system calls in virtual machine
+ */
 int sys_handlers_register(void);
 
+/**
+ unregister system calls in virtual machine
+ */
 void sys_handlers_unregister(void);
 
 /**
- procedures called via VM_CMD_CALL function
+ external functions for lustre md backend
  */
 enum vm_md_calls {
+	/**
+	 change work directory
+	*/
 	VM_MD_CALL_CD		= 100,
+	/**
+	 create directory
+	 */
 	VM_MD_CALL_MKDIR	= 101,
+	/**
+	 read directory contents
+	 */
 	VM_MD_CALL_READIR	= 102,
+	/**
+	 unlink metadata object
+	 */
 	VM_MD_CALL_UNLINK	= 103,
+	/**
+	 open file
+	 */
 	VM_MD_CALL_OPEN		= 104,
+	/**
+	 close already opened file.
+	 */
 	VM_MD_CALL_CLOSE	= 105,
+	/**
+	 get attributes for metadata object
+	 */
 	VM_MD_CALL_STAT		= 106,
+	/**
+	 set attributes for metadata object
+	 */
 	VM_MD_CALL_SETATTR	= 107,
+	/**
+	 create a soft link between metadata objects
+	 */
 	VM_MD_CALL_SOFTLINK	= 108,
+	/**
+	 create a hard link between metadata objects
+	 */
 	VM_MD_CALL_HARDLINK	= 109,
+	/**
+	 read soft link contents
+	 */
 	VM_MD_CALL_READLINK	= 110,
 	VM_MD_CALL_MAX,
 };
 
+/**
+ register lustre md operations in virtual machine
+ 
+ @return <0 if fatail error hit.
+ */
 int md_handlers_register(void);
 
+/**
+ unregister lustre md operation in virtual machine
+ */
 void md_handlers_unregister(void);
 
 

@@ -47,7 +47,7 @@ enum simul_ops {
 #endif
 
 /**
- parameters for 
+ parameters to a create lustre metadata client
  */
 struct simul_ioctl_cli {
 	char __user	*sic_name;
