@@ -6,7 +6,7 @@
 #include "fifo.h"
 
 /**
-	VM_CALL_CD
+	long VM_CALL_CD(char *)
 	lookup name and update current directroy pointer in
 	env.
 */
@@ -15,57 +15,71 @@ static int md_call_cd(void *env, struct fifo *f, uint32_t *ip)
 	long ret = VM_RET_OK;
 	char *dirname;
 
-	if (fifo_pop(f, (long *)&dirname))
+	if (fifo_pop(f, (long *)&dirname) < 0)
 		return -ENODATA;
 
 	return fifo_push(f, ret);
 }
 
 /**
-	VM_CALL_MKDIR
+	long VM_CALL_MKDIR(char *)
 */
 static int md_call_mkdir(void *env, struct fifo *f, uint32_t *ip)
 {
 	long ret = VM_RET_OK;
 	char *dirname;
 
-	if (fifo_pop(f, (long *)&dirname))
+	if (fifo_pop(f, (long *)&dirname) < 0)
 		return -ENODATA;
 
 	return fifo_push(f, ret);
 }
 
 /**
-	VM_CALL_READIR
+	long VM_CALL_READIR(char *)
 	get all directory pages from a md server
 */
 static int md_call_readdir(void *env, struct fifo *f, uint32_t *ip)
 {
 	long ret = VM_RET_OK;
+	char *dirname;
+
+	if (fifo_pop(f, (long *)&dirname) < 0)
+		return -ENODATA;
 
 	return fifo_push(f, ret);
 }
 
 /**
-	VM_CALL_UNLINK
+	long VM_CALL_UNLINK(char *);
 */
 static int md_call_unlink(void *env, struct fifo *f, uint32_t *ip)
 {
 	long ret = VM_RET_OK;
 	char *name;
 
-	if (fifo_pop(f, (long *)&name))
+	if (fifo_pop(f, (long *)&name) < 0)
 		return -ENODATA;
 
 	return fifo_push(f, ret);
 }
 
 /**
-	VM_CALL_OPEN
+	long VM_CALL_OPEN(char *name, flag, ret);
 */
 static int md_call_open(void *env, struct fifo *f, uint32_t *ip)
 {
 	long ret = VM_RET_OK;
+	char *name;
+	long flags;
+	long reg;
+
+	if (fifo_pop(f, (long *)&name) < 0)
+		return -ENODATA;
+	if (fifo_pop(f, &flags) < 0)
+		return -ENODATA;
+	if (fifo_pop(f, &reg) < 0)
+		return -ENODATA;
 
 	return fifo_push(f, ret);
 }
@@ -76,6 +90,10 @@ static int md_call_open(void *env, struct fifo *f, uint32_t *ip)
 static int md_call_close(void *env, struct fifo *f, uint32_t *ip)
 {
 	long ret = VM_RET_OK;
+	long reg;
+
+	if (fifo_pop(f, &reg) < 0)
+		return -ENODATA;
 
 	return fifo_push(f, ret);
 }
@@ -87,6 +105,10 @@ static int md_call_close(void *env, struct fifo *f, uint32_t *ip)
 static int md_call_stat(void *env, struct fifo *f, uint32_t *ip)
 {
 	long ret = VM_RET_OK;
+	char *name;
+
+	if (fifo_pop(f, (long *)&name) < 0)
+		return -ENODATA;
 
 	return fifo_push(f, ret);
 }
@@ -97,6 +119,13 @@ static int md_call_stat(void *env, struct fifo *f, uint32_t *ip)
 static int md_call_setattr(void *env, struct fifo *f, uint32_t *ip)
 {
 	long ret = VM_RET_OK;
+	char *name;
+	long flags;
+
+	if (fifo_pop(f, (long *)&name) < 0)
+		return -ENODATA;
+	if (fifo_pop(f, &flags) < 0)
+		return -ENODATA;
 
 	return fifo_push(f, ret);
 }
@@ -107,6 +136,14 @@ static int md_call_setattr(void *env, struct fifo *f, uint32_t *ip)
 static int md_call_softlink(void *env, struct fifo *f, uint32_t *ip)
 {
 	long ret = VM_RET_OK;
+	char *name;
+	char *new;
+
+	if (fifo_pop(f, (long *)&name) < 0)
+		return -ENODATA;
+	if (fifo_pop(f, (long *)&new) < 0)
+		return -ENODATA;
+
 
 	return fifo_push(f, ret);
 }
@@ -117,6 +154,13 @@ static int md_call_softlink(void *env, struct fifo *f, uint32_t *ip)
 static int md_call_hardlink(void *env, struct fifo *f, uint32_t *ip)
 {
 	long ret = VM_RET_OK;
+	char *name;
+	char *new;
+
+	if (fifo_pop(f, (long *)&name) < 0)
+		return -ENODATA;
+	if (fifo_pop(f, (long *)&new) < 0)
+		return -ENODATA;
 
 	return fifo_push(f, ret);
 }
@@ -127,6 +171,10 @@ static int md_call_hardlink(void *env, struct fifo *f, uint32_t *ip)
 static int md_call_readlink(void *env, struct fifo *f, uint32_t *ip)
 {
 	long ret = VM_RET_OK;
+	char *name;
+
+	if (fifo_pop(f, (long *)&name) < 0)
+		return -ENODATA;
 
 	return fifo_push(f, ret);
 }
