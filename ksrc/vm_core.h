@@ -56,6 +56,13 @@ int vm_goto(struct stack_vm *vm, void *args);
 int vm_jz(struct stack_vm *vm, void *args);
 
 /**
+ conditional jump, results on top of stack 
+ jump if not zero or equal
+ VM_CMD_JNZ
+*/
+int vm_jnz(struct stack_vm *vm, void *args);
+
+/**
  VM_CMD_ADD
  */
 int vm_add(struct stack_vm *vm, void *args);

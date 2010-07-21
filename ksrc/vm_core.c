@@ -91,7 +91,6 @@ int vm_goto(struct stack_vm *vm, void *args)
 
 
 /**
- conditional jump, results on top of stack 
  VM_CMD_JZ
 */
 int vm_jz(struct stack_vm *vm, void *args)
@@ -105,6 +104,27 @@ int vm_jz(struct stack_vm *vm, void *args)
 	addr = *(long *)args;
 	DPRINT("jz %ld (%ld)\n", addr, a);
 	if(a == 0)
+		vm->sv_ip = addr;
+	else
+		vm->sv_ip += sizeof(long);
+
+	return 0;
+}
+
+/**
+ VM_CMD_JNZ
+*/
+int vm_jnz(struct stack_vm *vm, void *args)
+{
+	long a;
+	long addr;
+
+	if (fifo_pop(vm->sv_stack, &a) < 0 )
+		return -ENODATA;
+
+	addr = *(long *)args;
+	DPRINT("jnz %ld (%ld)\n", addr, a);
+	if(a != 0)
 		vm->sv_ip = addr;
 	else
 		vm->sv_ip += sizeof(long);
@@ -131,15 +151,18 @@ int vm_add(struct stack_vm *vm, void *args)
 
 /**
  VM_CMD_SUB
+ a - b
+ fifo state:
+ [b][a][fifo-bottom]
 */
 int vm_sub(struct stack_vm *vm, void *args)
 {
 	long a;
-	long b;
+	long b; 
 	long res;
 
-	if ((fifo_pop(vm->sv_stack, &a) < 0) ||
-	    (fifo_pop(vm->sv_stack, &b) < 0))
+	if ((fifo_pop(vm->sv_stack, &b) < 0) ||
+	    (fifo_pop(vm->sv_stack, &a) < 0))
 		return -ENODATA;
 
 	res = a - b;

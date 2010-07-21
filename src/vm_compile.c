@@ -325,6 +325,18 @@ static int enc_jz(struct vm_program *vprg, union cmd_arg data)
 	return add_long_to_buffer(vprg, l->vl_addr);
 }
 
+static int enc_jnz(struct vm_program *vprg, union cmd_arg data)
+{
+	struct vm_label *l;
+	DPRINT("jnz %s\n", data.cd_string);
+
+	l = vm_label_find(vprg, data.cd_string);
+	if (l == NULL)
+		return -ENOMEM;
+
+	return add_long_to_buffer(vprg, l->vl_addr);
+}
+
 static int enc_add(struct vm_program *vprg, union cmd_arg data)
 {
 	DPRINT("add\n");
@@ -357,6 +369,7 @@ const static enc_h_t en_helpers[VM_CMD_MAX] = {
 	[VM_CMD_CALL]	= enc_call,
 	[VM_CMD_GOTO]	= enc_goto,
 	[VM_CMD_JZ]	= enc_jz,
+	[VM_CMD_JNZ]	= enc_jnz,
 	[VM_CMD_ADD]	= enc_add,
 	[VM_CMD_SUB]	= enc_sub,
 	[VM_CMD_DUP]	= enc_dup,

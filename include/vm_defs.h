@@ -22,14 +22,16 @@ enum cmd_base {
 	VM_CMD_GOTO	= 5,
 	/* conditional jump, results on top of stack */
 	VM_CMD_JZ	= 6,
+	/* jump if not zero or equal*/
+	VM_CMD_JNZ	= 7,
 	/* */
-	VM_CMD_ADD	= 7,
+	VM_CMD_ADD	= 8,
 	/* */
-	VM_CMD_SUB	= 8,
+	VM_CMD_SUB	= 9,
 	/* duplicate data on stack top */
-	VM_CMD_DUP	= 9,
+	VM_CMD_DUP	= 10,
 	/* just remove entry on stack top */
-	VM_CMD_NOP	= 10,
+	VM_CMD_NOP	= 11,
 	VM_CMD_MAX,
 };
 

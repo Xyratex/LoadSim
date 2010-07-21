@@ -296,7 +296,7 @@ int encode_expected(struct vm_program *vprg, int exp)
 		return ret;
 
 	arg.cd_string = END_LABEL;
-	ret = vm_encode(vprg, VM_CMD_JZ,arg);
+	ret = vm_encode(vprg, VM_CMD_JNZ,arg);
 	if (ret)
 		return ret;
 

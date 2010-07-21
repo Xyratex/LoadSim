@@ -76,6 +76,7 @@ const static vm_int_fn int_fn[VM_CMD_MAX] = {
 	[VM_CMD_CALL]  = vm_call,
 	[VM_CMD_GOTO]  = vm_goto,
 	[VM_CMD_JZ]    = vm_jz,
+	[VM_CMD_JNZ]   = vm_jnz,
 	[VM_CMD_ADD]   = vm_add,
 	[VM_CMD_SUB]   = vm_sub,
 	[VM_CMD_DUP]   = vm_dup,
@@ -88,7 +89,6 @@ int vm_interpret_run(struct stack_vm *vm)
 	unsigned char op;
 	int rc = -ENODATA;
 	long old_ip;
-	int i = 0;
 
 	vm->sv_run = 1;
 	while(vm->sv_ip < vm->sv_size) {
@@ -101,8 +101,6 @@ int vm_interpret_run(struct stack_vm *vm)
 		} else {
 			rc = int_fn[op](vm, &vm->sv_program[vm->sv_ip]);
 		}
-		if (i++ > 25)
-			break;
 		if (rc) {
 			/* if operation failed  - restore pointer to operation */
 			err_print("operation %c (%u) - fail %d\n",
