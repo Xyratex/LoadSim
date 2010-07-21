@@ -6,6 +6,7 @@
 #include <linux/miscdevice.h>
 
 #include "kapi.h"
+#include "kdebug.h"
 #include "vm_defs.h" /* register / unregister */
 #include "vm_api.h"
 #include "md_env.h"
@@ -36,11 +37,15 @@ static int mdclient_create(struct simul_ioctl_cli *data)
 	if (rc < 0)
 		return rc;
 
+	init_completion(&start);
 	p = kthread_create(client_thread, env->mde_vm, data->sic_name);
 	if (IS_ERR(p)) {
 		rc = PTR_ERR(p);
+		err_print("can't start thread %s - rc %d\n",
+			  data->sic_name, rc);
 		goto err;
 	}
+	wake_up_process(p);
 	return 0;
 err:
 	md_client_destroy(env);
