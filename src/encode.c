@@ -245,8 +245,6 @@ int encode_loop_end(struct vm_program *vprg)
 	union cmd_arg arg;
 	char label[20];
 
-	loop_no ++;
-
 	arg.cd_long = 1;
 	ret = vm_encode(vprg, VM_CMD_PUSHL, arg);
 	if (ret)
@@ -258,16 +256,14 @@ int encode_loop_end(struct vm_program *vprg)
 		return ret;
 
 	snprintf(label, sizeof label, LOOP_ST_LABEL, loop_no);
-	ret = vm_label_resolve(vprg, label);
-	if (ret)
-		return ret;
-
 	arg.cd_string = label;
 	ret = vm_encode(vprg, VM_CMD_GOTO, arg);
 	if (ret)
 		return ret;
 
 	snprintf(label, sizeof label, LOOP_END_LABEL, loop_no);
+	loop_no ++;
+
 	return vm_label_resolve(vprg, label);
 }
 

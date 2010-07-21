@@ -8,6 +8,10 @@
 
 #include "debug.h"
 
+enum {
+	VM_LABEL_NEW = -1
+};
+
 /**
  try to find label by name or allocate new
  */
@@ -21,7 +25,7 @@ static struct vm_label *vm_label_find(struct vm_program *vprg, char *name)
 			/* forward reference to label.
 			   create new wait reference.
 			 */
-			if (ret->vl_addr == 0) {
+			if (ret->vl_addr == VM_LABEL_NEW) {
 				w = malloc(sizeof *w);
 				if (w == NULL)
 					return NULL;
@@ -41,7 +45,7 @@ static struct vm_label *vm_label_find(struct vm_program *vprg, char *name)
 		free(ret);
 		return NULL;
 	}
-	ret->vl_addr = 0;
+	ret->vl_addr = VM_LABEL_NEW;
 	INIT_LIST_HEAD(&ret->vl_waits);
 
 	list_add(&ret->vl_link, &vprg->vmp_labels);
@@ -62,8 +66,10 @@ int vm_label_resolve(struct vm_program *vprg, char *label_name)
 		return -ENOMEM;
 
 	/* second label with same name ?... */
-	if (label->vl_addr != 0)
+	if (label->vl_addr != VM_LABEL_NEW) {
+		err_print("label %s - already exist ?\n", label_name);
 		return -EINVAL;
+	}
 
 	/* resolve forward reference */
 	label->vl_addr = vprg->vmp_enc_idx;
@@ -100,10 +106,12 @@ static int vm_labels_is_resolved(struct vm_program *vprg)
 	struct vm_label *label;
 
 	list_for_each_entry(label, &vprg->vmp_labels, vl_link) {
-		if (label->vl_addr == 0)
-			return -ENODATA;
-		if (!list_empty(&label->vl_waits))
+		if ((label->vl_addr == VM_LABEL_NEW) ||
+		    (!list_empty(&label->vl_waits)) {
+			err_print("unresolved label  %s:%s\n",
+				  vprg->vmp_name, label->vl_name);
 			return -EINVAL;
+		}
 	}
 
 	return 0;
