@@ -3,6 +3,7 @@
 
 #include "md_env.h"
 #include "kapi.h"
+#include "kdebug.h"
 #include "vm_defs.h"
 #include "vm_api.h"
 
@@ -14,8 +15,10 @@ int md_client_create(struct md_env **env, struct simul_ioctl_cli *data)
 	int rc;
 
 	ret = kmalloc(sizeof *ret, GFP_KERNEL);
-	if (ret == NULL)
+	if (ret == NULL) {
+		err_print("can't alloc memory for md_env\n");
 		return -ENOMEM;
+	}
 
 	rc = vm_interpret_init(&ret->mde_vm, VM_DEF_STACK,
 				data->sic_program, data->sic_programsz,
@@ -34,7 +37,7 @@ err:
 
 void md_client_destroy(struct md_env *env)
 {
-	if (env->mde_vm)
+	if (env->mde_vm != NULL)
 		vm_interpret_fini(env->mde_vm);
 
 	kfree(env);

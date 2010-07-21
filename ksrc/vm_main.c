@@ -3,6 +3,7 @@
 #include <asm/uaccess.h>
 #include <linux/errno.h>
 
+#include "kdebug.h"
 #include "fifo.h"
 #include "vm_defs.h"
 #include "vm_api.h"
@@ -17,8 +18,10 @@ int vm_interpret_init(struct stack_vm **vm, int stack_size,
 	int rc;
 
 	v = kmalloc(sizeof *v, GFP_KERNEL);
-	if (v == NULL)
+	if (v == NULL) {
+		err_print("can't allocate memory for stack vm\n");
 		return -ENOMEM;
+	}
 
 	stack = fifo_create(stack_size);
 	if (stack == NULL) {
@@ -28,11 +31,14 @@ int vm_interpret_init(struct stack_vm **vm, int stack_size,
 
 	program = vmalloc(size);
 	if (program == NULL) {
+		err_print("can't allocate memory for program - %d\n", size);
 		rc = -ENOMEM;
 		goto err2;
 	}
 
 	if (copy_from_user(program, prg, size)) {
+		err_print("can't copy program from user %p - %d\n",
+			prg, size);
 		rc = -EFAULT;
 		goto err3;
 	}
@@ -51,6 +57,7 @@ err2:
 	fifo_destroy(stack);
 err1:
 	kfree(v);
+	*vm = NULL;
 	return rc;
 }
 
@@ -88,13 +95,15 @@ int vm_interpret_run(struct stack_vm *vm)
 		op = vm->sv_program[vm->sv_ip ++];
 		printk("op %d\n", op);
 		if ((op > ARRAY_SIZE(int_fn)) || (int_fn[op] == NULL)) {
-			printk(KERN_ERR "unknow op (%c) !\n", op);
+			err_print("unknow op (%c) !\n", op);
 			rc = -EINVAL;
 		} else {
 			rc = int_fn[op](vm, &vm->sv_program[vm->sv_ip]);
 		}
 		if (rc) {
 			/* if operation failed  - restore pointer to operation */
+			err_print("operation %c (%u) - fail %d\n",
+				  op, (unsigned int)old_ip, rc);
 			vm->sv_ip = old_ip;
 			break;
 		}
