@@ -61,7 +61,7 @@ void vm_interpret_fini(struct stack_vm *vm)
 	kfree(vm);
 }
 
-static vm_int_fn int_fn[VM_CMD_MAX] = {
+const static vm_int_fn int_fn[VM_CMD_MAX] = {
 	[VM_CMD_PUSHS] = vm_pushs,
 	[VM_CMD_PUSHL] = vm_pushl,
 	[VM_CMD_CMPS]  = vm_cmps,

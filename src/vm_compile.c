@@ -314,7 +314,7 @@ static int enc_nop(struct vm_program *vprg, union cmd_arg data)
 	return 0;
 }
 
-static enc_h_t en_helpers[VM_CMD_MAX] = {
+const static enc_h_t en_helpers[VM_CMD_MAX] = {
 	[VM_CMD_PUSHS]	= enc_pushs,
 	[VM_CMD_PUSHL]	= enc_pushl,
 	[VM_CMD_CMPS]	= enc_cmps,
