@@ -9,9 +9,9 @@ struct simul_ioctl_cli;
 #include <linux/list.h>
 
 /**
- enviroment for metata tests
+ environment for metata tests
  
- each client has open enviment where stored a private data.
+ each client has open environment where stored a private data.
  */
 struct md_env {
 	/**

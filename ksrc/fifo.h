@@ -5,16 +5,16 @@ struct fifo;
 
 
 /**
- allocate fifo and fill memebers with initial data.
- \a size - maximal size of fifo
+ allocate FIFO and fill members with initial data.
+ \a size - maximal size of FIFO
  
  \retval NULL - don't have memory for new structure.
- \retval !NULL - fifo object.
+ \retval !NULL - FIFO object.
  */
 struct fifo *fifo_create(int size);
 
 /**
- destroy fifo structure
+ destroy FIFO structure
  */
 void fifo_destroy(struct fifo *fifo);
 

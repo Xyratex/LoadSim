@@ -7,7 +7,7 @@
 
 /**
 	long VM_CALL_CD(char *)
-	lookup name and update current directroy pointer in
+	lookup name and update current directory pointer in
 	env.
 */
 static int md_call_cd(void *env, struct fifo *f, uint32_t *ip)

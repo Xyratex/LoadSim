@@ -102,7 +102,7 @@ int vm_program_check(struct vm_program *vprg);
 
 
 /**
- find progmram for vm by name
+ find program for vm by name
  */
 struct vm_program *vm_program_find(char *name);
 

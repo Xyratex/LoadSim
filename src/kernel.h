@@ -4,13 +4,13 @@
 /**
  userland to kernel interface API, userland part.
 
- that code interact with kernel module and provide folling API
- to create test clients, upload and run programs, and obtain results.
+ that code interact with kernel module and provide API
+ to create test clients; upload, run programs, and obtain results.
 */
 
 
 /**
- open and initialize test enviroment in kernel
+ open and initialize test environment in kernel
  */
 int simul_api_open(void);
 
@@ -36,7 +36,7 @@ int simul_api_wait_finished(void);
 int simul_api_get_results(long *res);
 
 /**
- destroy kernel test enviroment and close kernel<>userland communication
+ destroy kernel test environment and close kernel<>userland communication
  */
 int simul_api_close(void);
 

@@ -22,7 +22,7 @@ struct handler_reg {
 };
 
 /**
- register handler for specificed function
+ register handler for external function
  
  \retval 0 - function registered successfully
  \retval -EEXIST - function with that id already exist.
@@ -30,7 +30,7 @@ struct handler_reg {
 int vm_handler_register(int nr, struct handler_reg *h);
 
 /**
- remove handler from a system.
+ remove handler to external function from a system.
  \a id - unique identifier of the function
  
  \retval 0 - function unregistered successfully.
@@ -56,14 +56,14 @@ struct stack_vm {
 /* vm_main.c */
 
 /**
- set interpreter intial state.
+ set interpreter initial state.
  \a vm new create vm pointer
  \a stack_size - maximal stack usage
  \a prg program to copy from user memory
  \a size program size
- \a env enviroment to run external function
+ \a env environment to run external function
  
- \retval 0 - interperter fully init
+ \retval 0 - interpreter fully init
  \retval -ENOMEM - not have memory
  \retval <0 - other errors
 
@@ -73,14 +73,14 @@ int vm_interpret_init(struct stack_vm **vm, int stack_size,
 		      char __user *prg, int size, void *env);
 
 /**
- destroy virtual machine and relese owned resources.
+ destroy virtual machine and release owned resources.
  */
 void vm_interpret_fini(struct stack_vm *vm);
 
 /**
  run program on virtual machine.
  
- fuction has returned data from top of stack and assume that is return code.
+ function has returned data from top of stack and assume that is return code.
  */
 int vm_interpret_run(struct stack_vm *vm);
 

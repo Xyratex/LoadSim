@@ -24,18 +24,18 @@ enum {
  \arg args - pointer to some area which store arguments for that operation.
  
  \retval 0 if operation executed correctly (has enough resources, arguments, etc)
- \retval <0 if operation hit fatail error, and execution should be stoped at that point.
+ \retval <0 if operation hit fatal error, and execution should be stopped at that point.
  */
 enum vm_cmd {
 	/* push pointer to string */
 	VM_CMD_PUSHS	= 0,
 	/* push long */
 	VM_CMD_PUSHL	= 1,
-	/* compare string, result on top fifo */
+	/* compare string, result on top FIFO */
 	VM_CMD_CMPS	= 2,
-	/* compare long's, result on top fifo */
+	/* compare long's, result on top FIFO */
 	VM_CMD_CMPL	= 3,
-	/* call handler, function id on top fifo */
+	/* call handler, function id on top FIFO */
 	VM_CMD_CALL	= 4,
 	/* goto, address on top of stack */
 	VM_CMD_GOTO	= 5,
@@ -60,8 +60,8 @@ enum vm_cmd {
  has a many functions called via VM_CMD_CALL system command.
  each additional system function has prototype:
 
- \arg env constant pointer to enviroment passed when VM created
- \arg f fifo with data. NOTE arguments are stored in reverse order,
+ \arg env constant pointer to environment passed when VM created
+ \arg f FIFO with data. NOTE arguments are stored in reverse order,
         so a - b stored as [top][a][b][bottom]
  \arg ip instruction pointer, need if function want change execution order
 
@@ -171,7 +171,7 @@ enum vm_md_calls {
 /**
  register lustre md operations in virtual machine
  
- @return <0 if fatail error hit.
+ @return <0 if fatal error hit.
  */
 int md_handlers_register(void);
 

@@ -9,11 +9,11 @@
  
  typical usage of simulator is
  1) open a device node. kernel is initialize internal states and stay ready to create
-    enviroments and virtual machines.
+    environments and virtual machines.
  2) upload programs. each client spawn execute thread and wait until all clients
     initialized
- 3) call run command. all threads wakeup and run own program.
- 4) userland application stay in waiting test compleated 
+ 3) call run command. all threads wake-up and run own program.
+ 4) userland application stay in waiting test completed 
  5) get results and statistic after execution
  6) close an opened device node. 
 */
