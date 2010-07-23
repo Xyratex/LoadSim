@@ -1,7 +1,7 @@
 ifneq ($(KERNELRELEASE),)
     obj-m	:= sim.o
     sim-objs	:= simul.o 
-    sim-objs	+= md_env.o md_handlers.o
+    sim-objs	+= md_env.o clients/lustre_md.o
     sim-objs	+= fifo.o vm_main.o vm_core.o vm_call.o vm_sys.o
 else
     KDIR        := /lib/modules/$(shell uname -r)/build/
@@ -9,7 +9,7 @@ else
     ROOT	:= $(shell cd ..; pwd)
 
 debug:
-	$(MAKE) -C $(KDIR) SUBDIRS=$(PWD) EXTRA_CFLAGS="-g -I $(ROOT)/include/" modules 
+	$(MAKE) -C $(KDIR) SUBDIRS=$(PWD) EXTRA_CFLAGS="-g -I $(ROOT)/include/ -I $(PWD)" modules 
 
 default: 
 	$(MAKE) -C $(KDIR) SUBDIRS=$(PWD) modules 

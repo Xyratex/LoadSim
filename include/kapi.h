@@ -51,7 +51,7 @@ enum simul_ops {
  */
 struct simul_ioctl_cli {
 	char __user	*sic_name;
-	char __user	*sic_dst_uuid;
+	char __user	*sic_dst_fs;
 	char __user	*sic_dst_nid;
 	int		sic_programsz;
 	char __user	*sic_program;

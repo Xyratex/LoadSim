@@ -165,6 +165,10 @@ enum vm_md_calls {
 	 read soft link contents
 	 */
 	VM_MD_CALL_READLINK	= 110,
+	/**
+	 rename
+	 */
+	VM_MD_CALL_RENAME	= 111,
 	VM_MD_CALL_MAX,
 };
 

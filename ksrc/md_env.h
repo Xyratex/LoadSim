@@ -7,6 +7,7 @@ struct stack_vm;
 struct simul_ioctl_cli;
 
 #include <linux/list.h>
+#include <clients/client.h>
 
 /**
  environment for metata tests
@@ -23,18 +24,6 @@ struct md_env {
 	 */
 	char			*mde_name;
 	/**
-	 used to connect
-	 */
-	struct obd_export	*mde_mdc;
-	/**
-	 root dentry to start lookup
-	 */
-	struct dentry		*mde_root;
-	/**
-	 current directory
-	 */
-	struct dentry		*mde_pwd;
-	/**
 	 registers for an open calls
 	 */
 	void			*mde_open;
@@ -42,6 +31,10 @@ struct md_env {
 	 virtual machine attached to the client
 	*/
 	struct stack_vm		*mde_vm;
+	/**
+	 private data
+	 */
+	struct md_client	mde_cli;
 };
 
 /**
