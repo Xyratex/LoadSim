@@ -28,8 +28,9 @@ int md_client_create(struct md_env **env, struct simul_ioctl_cli *data)
 	if (rc < 0)
 		goto err;
 
-	ret->mde_cli = lustre_cli;
-	rc = ret->mde_cli.cli_init(&ret->mde_cli, NULL, NULL);
+	ret->mde_cli = generic_cli;
+	rc = ret->mde_cli.cli_init(&ret->mde_cli, data->sic_dst_fs,
+				   data->sic_dst_nid);
 	if (rc < 0)
 		goto err;
 

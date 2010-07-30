@@ -15,11 +15,15 @@ struct server_link {
 	 NID to connect
 	 */
 	char			*sl_nid;
+	/**
+	 FS to connect
+	 */
+	char			*sl_fs;
 };
 /**
  initialize server connection
  */
-int server_create(char *, char *);
+int server_create(char *, char *, char *);
 
 /**
  test client settings

@@ -17,10 +17,18 @@ struct completion start;
 
 static int client_thread(void *data)
 {
+	struct md_env *env;
+	int rc;
+
+	rc = md_client_create(&env, data);
+	printk("cli create %d - %p\n", rc, env);
+	if (rc < 0)
+		return rc;
+
 	complete(&start);
 	/* wait until run event */
 	printk("thread run\n");
-	vm_interpret_run(data);
+	vm_interpret_run(env->mde_vm);
 
 	return 0;
 }
@@ -28,17 +36,11 @@ static int client_thread(void *data)
 
 static int mdclient_create(struct simul_ioctl_cli *data)
 {
-	int rc;
-	struct md_env *env;
+	int rc = 0;
 	struct task_struct *p;
 
-	rc = md_client_create(&env, data);
-	printk("cli create %d - %p\n", rc, env);
-	if (rc < 0)
-		return rc;
-
 	init_completion(&start);
-	p = kthread_create(client_thread, env->mde_vm, data->sic_name);
+	p = kthread_create(client_thread, data, data->sic_name);
 	if (IS_ERR(p)) {
 		rc = PTR_ERR(p);
 		err_print("can't start thread %s - rc %d\n",
@@ -46,9 +48,8 @@ static int mdclient_create(struct simul_ioctl_cli *data)
 		goto err;
 	}
 	wake_up_process(p);
-	return 0;
+	wait_for_completion(&start);
 err:
-	md_client_destroy(env);
 	return rc;
 }
 
@@ -122,6 +123,6 @@ simul_mod_cleanup(void)
 	
 	md_clients_destroy();
 }
-
+MODULE_LICENSE("GPL v2");
 module_init(simul_mod_init);
 module_exit(simul_mod_cleanup);

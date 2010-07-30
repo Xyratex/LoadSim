@@ -1,6 +1,8 @@
 #ifndef __SIMUL_API_
 #define __SIMUL_API_
 
+struct server_link;
+
 /**
  userland to kernel interface API, userland part.
 
@@ -18,7 +20,8 @@ int simul_api_open(void);
  create one test client and upload on it.
 
  */
-int simul_api_cli_create(char *name, char *dstnid, void *data, int size);
+int simul_api_cli_create(char *cliname, struct server_link *sl,
+			 void *data, int size);
 
 /**
  run programs on all clients

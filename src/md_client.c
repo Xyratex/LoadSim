@@ -6,13 +6,13 @@
 #include "kernel.h"
 #include "vm_compile.h"
 
-static char *server_uid;
-static char *server_nid;
+static struct server_link sl;
 
-int server_create(char *name, char *nid)
+int server_create(char *name, char *fs, char *nid)
 {
-	server_uid = strdup(name);
-	server_nid = strdup(nid);
+	sl.sl_name = strdup(name);
+	sl.sl_fs = strdup(fs);
+	sl.sl_nid = strdup(nid);
 
 	return 0;
 }
@@ -25,6 +25,6 @@ int client_create(char *name, char *program)
 	if (prg == NULL)
 		return -ESRCH;
 
-	return simul_api_cli_create(name, server_nid, 
+	return simul_api_cli_create(name, &sl,
 				    prg->vmp_data, prg->vmp_enc_idx);
 }

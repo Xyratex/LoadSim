@@ -24,10 +24,6 @@ struct md_env {
 	 */
 	char			*mde_name;
 	/**
-	 registers for an open calls
-	 */
-	void			*mde_open;
-	/**
 	 virtual machine attached to the client
 	*/
 	struct stack_vm		*mde_vm;

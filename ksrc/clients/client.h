@@ -45,6 +45,6 @@ struct md_client {
 	int (*rename)(struct md_client *,const char *oldname, const char *newname);
 };
 
-extern struct md_client lustre_cli;
+extern struct md_client generic_cli;
 
 #endif

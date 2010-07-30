@@ -4,6 +4,7 @@
 #include <fcntl.h>
 #include <errno.h>
 
+#include "md_client.h"
 #include "kapi.h"
 
 static int api_fd = -1;
@@ -17,15 +18,17 @@ int simul_api_open()
 	return 0;
 }
 
-int simul_api_cli_create(char *name, char *dstnid, void *data, int size)
+int simul_api_cli_create(char *cliname, struct server_link *sl,
+			 void *data, int size)
 {
 	struct simul_ioctl_cli _data;
 
 	if (api_fd == -1)
 		return -ENOSYS;
 
-	_data.sic_name = name;
-	_data.sic_dst_nid = dstnid;
+	_data.sic_name = cliname;
+	_data.sic_dst_fs = sl->sl_fs;
+	_data.sic_dst_nid = sl->sl_nid;
 	_data.sic_program = data;
 	_data.sic_programsz = size;
 
