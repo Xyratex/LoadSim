@@ -150,25 +150,37 @@ enum vm_md_calls {
 	 */
 	VM_MD_CALL_STAT		= 106,
 	/**
-	 set attributes for metadata object
+	 change mode attribute for metadata object
 	 */
-	VM_MD_CALL_SETATTR	= 107,
+	VM_MD_CALL_CHMOD	= 107,
+	/**
+	 change owner information for metadata object
+	*/
+	VM_MD_CALL_CHOWN	= 108,
+	/**
+	 change time in metadata object
+	 */
+	VM_MD_CALL_CHTIME	= 109,
+	/**
+	 change size of object
+	 */
+	VM_MD_CALL_TRUNCATE	= 100,
 	/**
 	 create a soft link between metadata objects
 	 */
-	VM_MD_CALL_SOFTLINK	= 108,
+	VM_MD_CALL_SOFTLINK	= 111,
 	/**
 	 create a hard link between metadata objects
 	 */
-	VM_MD_CALL_HARDLINK	= 109,
+	VM_MD_CALL_HARDLINK	= 112,
 	/**
 	 read soft link contents
 	 */
-	VM_MD_CALL_READLINK	= 110,
+	VM_MD_CALL_READLINK	= 113,
 	/**
 	 rename
 	 */
-	VM_MD_CALL_RENAME	= 111,
+	VM_MD_CALL_RENAME	= 114,
 	VM_MD_CALL_MAX,
 };
 

@@ -1,6 +1,10 @@
 #ifndef _SIMUL_CLIENTS_H_
 #define _SIMUL_CLIENTS_H_
 
+enum {
+	MAX_OPEN_HANDLES = 1000
+};
+
 struct md_client {
 	void *private;
 	int (*cli_init)(struct md_client *env, char *fsname, char *dstnid);
@@ -15,7 +19,7 @@ struct md_client {
 	 create a new directiry
 	 \a name new work directory name
 	 */
-	int (*mkdir)(struct md_client *, const char *name);
+	int (*mkdir)(struct md_client *, const char *name, const int mode);
 	/**
 	 */
 	int (*readdir)(struct md_client *, const char *name);
@@ -24,7 +28,7 @@ struct md_client {
 	int (*unlink)(struct md_client *,const char *name);
 
 	int (*open)(struct md_client *, const char *name,
-		    const long flags, const long reg);
+		    const long flags, const long mode, const long reg);
 	int (*close)(struct md_client *, long reg);
 
 	/**
@@ -33,7 +37,10 @@ struct md_client {
 	/**
 	 change attributes for md object
 	 */
-	int (*setattr)(struct md_client *, const char *name, long flags);
+	int (*chmod)(struct md_client *, const char *name, long mode);
+	int (*chown)(struct md_client *, const char *name, uid_t uid, gid);
+	int (*chtime)(struct md_client *, const char *name, long time);
+	int (*truncate)(struct md_client *, const char *name, long size);
 	/**
 	 */
 	int (*lookup)(struct md_client *,const char *name);

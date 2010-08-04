@@ -39,11 +39,6 @@ struct md_env {
 int md_client_create(struct md_env **env, struct simul_ioctl_cli *data);
 
 /**
- deallocate one client
-*/
-void md_client_destroy(struct md_env *env);
-
-/**
  destroy all clients in global list
  */
 void md_clients_destroy(void);

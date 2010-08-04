@@ -10,6 +10,17 @@
 
 static LIST_HEAD(md_clients);
 
+static void md_client_destroy(struct md_env *env)
+{
+	if (env->mde_vm != NULL)
+		vm_interpret_fini(env->mde_vm);
+
+	if (env->mde_cli.cli_fini)
+		env->mde_cli.cli_fini(&env->mde_cli);
+
+	kfree(env);
+}
+
 int md_client_create(struct md_env **env, struct simul_ioctl_cli *data)
 {
 	struct md_env *ret;
@@ -43,16 +54,6 @@ err:
 	return rc;
 }
 
-void md_client_destroy(struct md_env *env)
-{
-	if (env->mde_vm != NULL)
-		vm_interpret_fini(env->mde_vm);
-
-	if (env->mde_cli.cli_fini)
-		env->mde_cli.cli_fini(&env->mde_cli);
-
-	kfree(env);
-}
 
 void md_clients_destroy(void)
 {
@@ -92,12 +93,16 @@ static int md_call_mkdir(void *env, struct fifo *f, uint32_t *ip)
 {
 	long ret;
 	char *dirname;
+	long mode;
 	struct md_env *md = env;
 
 	if (fifo_pop(f, (long *)&dirname) < 0)
 		return -ENODATA;
 
-	ret = md->mde_cli.mkdir(&md->mde_cli, dirname);
+	if (fifo_pop(f, &mode) < 0)
+		return -ENODATA;
+
+	ret = md->mde_cli.mkdir(&md->mde_cli, dirname, mode);
 
 	return fifo_push(f, ret ? VM_RET_FAIL : VM_RET_OK);
 }
@@ -145,6 +150,7 @@ static int md_call_open(void *env, struct fifo *f, uint32_t *ip)
 	long ret;
 	char *name;
 	long flags;
+	long mode;
 	long reg;
 	struct md_env *md = env;
 
@@ -152,10 +158,12 @@ static int md_call_open(void *env, struct fifo *f, uint32_t *ip)
 		return -ENODATA;
 	if (fifo_pop(f, &flags) < 0)
 		return -ENODATA;
+	if (fifo_pop(f, &mode) < 0)
+		return -ENODATA;
 	if (fifo_pop(f, &reg) < 0)
 		return -ENODATA;
 
-	ret = md->mde_cli.open(&md->mde_cli, name, flags, reg);
+	ret = md->mde_cli.open(&md->mde_cli, name, flags, mode, reg);
 	return fifo_push(f, ret ? VM_RET_FAIL : VM_RET_OK);
 }
 
@@ -194,21 +202,84 @@ static int md_call_stat(void *env, struct fifo *f, uint32_t *ip)
 }
 
 /**
-	VM_CALL_SETATTR
+	VM_CALL_CHMOD
 */
-static int md_call_setattr(void *env, struct fifo *f, uint32_t *ip)
+static int md_call_chmod(void *env, struct fifo *f, uint32_t *ip)
 {
 	long ret;
 	char *name;
-	long flags;
+	long mode;
 	struct md_env *md = env;
 
 	if (fifo_pop(f, (long *)&name) < 0)
 		return -ENODATA;
-	if (fifo_pop(f, &flags) < 0)
+	if (fifo_pop(f, &mode) < 0)
 		return -ENODATA;
 
-	ret = md->mde_cli.setattr(&md->mde_cli, name, flags);
+	ret = md->mde_cli.chmod(&md->mde_cli, name, mode);
+
+	return fifo_push(f, ret ? VM_RET_FAIL : VM_RET_OK);
+}
+
+/**
+	VM_CALL_CHOWN
+*/
+static int md_call_chown(void *env, struct fifo *f, uint32_t *ip)
+{
+	long ret;
+	char *name;
+	long uid;
+	long gid;
+	struct md_env *md = env;
+
+	if (fifo_pop(f, (long *)&name) < 0)
+		return -ENODATA;
+	if (fifo_pop(f, &uid) < 0)
+		return -ENODATA;
+	if (fifo_pop(f, &gid) < 0)
+		return -ENODATA;
+
+	ret = md->mde_cli.chown(&md->mde_cli, name, mode);
+
+	return fifo_push(f, ret ? VM_RET_FAIL : VM_RET_OK);
+}
+
+/**
+	VM_CALL_CHTIME
+*/
+static int md_call_chtime(void *env, struct fifo *f, uint32_t *ip)
+{
+	long ret;
+	char *name;
+	long time;
+	struct md_env *md = env;
+
+	if (fifo_pop(f, (long *)&name) < 0)
+		return -ENODATA;
+	if (fifo_pop(f, &time) < 0)
+		return -ENODATA;
+
+	ret = md->mde_cli.chtime(&md->mde_cli, name, time);
+
+	return fifo_push(f, ret ? VM_RET_FAIL : VM_RET_OK);
+}
+
+/**
+	VM_CALL_TRUNCATE
+*/
+static int md_call_truncate(void *env, struct fifo *f, uint32_t *ip)
+{
+	long ret;
+	char *name;
+	long size;
+	struct md_env *md = env;
+
+	if (fifo_pop(f, (long *)&name) < 0)
+		return -ENODATA;
+	if (fifo_pop(f, &size) < 0)
+		return -ENODATA;
+
+	ret = md->mde_cli.truncate(&md->mde_cli, name, size);
 
 	return fifo_push(f, ret ? VM_RET_FAIL : VM_RET_OK);
 }
@@ -300,7 +371,10 @@ struct handler_reg md_hld[] = {
     {.hr_id = VM_MD_CALL_OPEN, .hr_func = md_call_open },
     {.hr_id = VM_MD_CALL_CLOSE, .hr_func = md_call_close },
     {.hr_id = VM_MD_CALL_STAT, .hr_func = md_call_stat },
-    {.hr_id = VM_MD_CALL_SETATTR, .hr_func = md_call_setattr },
+    {.hr_id = VM_MD_CALL_CHMOD, .hr_func = md_call_chmod },
+    {.hr_id = VM_MD_CALL_CHOWN, .hr_func = md_call_chown },
+    {.hr_id = VM_MD_CALL_CHTIME, .hr_func = md_call_chtime },
+    {.hr_id = VM_MD_CALL_TRUNCATE, .hr_func = md_call_truncate },
     {.hr_id = VM_MD_CALL_SOFTLINK, .hr_func = md_call_softlink },
     {.hr_id = VM_MD_CALL_HARDLINK, .hr_func = md_call_hardlink },
     {.hr_id = VM_MD_CALL_READLINK, .hr_func = md_call_readlink },

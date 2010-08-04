@@ -4,6 +4,9 @@
 #include <linux/completion.h>
 #include <linux/fs.h>
 #include <linux/miscdevice.h>
+#include <linux/wait.h>
+#include <linux/poll.h>
+#include <asm/atomic.h>
 
 #include "kapi.h"
 #include "kdebug.h"
@@ -15,24 +18,43 @@ struct inode;
 
 struct completion start;
 
+static atomic_t clients_cnt = ATOMIC_INIT(0);
+static DECLARE_WAIT_QUEUE_HEAD(clients_wait);
+
+enum sim_state {
+	SIM_SETUP,
+	SIM_RUN,
+	SIM_TERM,
+};
+
+static enum sim_state state = SIM_SETUP;
+static DECLARE_WAIT_QUEUE_HEAD(clients_run);
+
 static int client_thread(void *data)
 {
 	struct md_env *env;
 	int rc;
 
 	rc = md_client_create(&env, data);
-	printk("cli create %d - %p\n", rc, env);
+	complete(&start);
+	DPRINT("cli create %d - %p\n", rc, env);
 	if (rc < 0)
 		return rc;
 
-	complete(&start);
+	wait_event(&clients_run, state != SIM_SETUP);
+	if (state == SIM_TERM)
+		return 0;
+
+	atomic_inc(&clients_cnt);
 	/* wait until run event */
-	printk("thread run\n");
+	DPRINT("thread run\n");
 	vm_interpret_run(env->mde_vm);
+
+	atomic_dec(&clients_cnt);
+	wake_up(&clients_wait);
 
 	return 0;
 }
-
 
 static int mdclient_create(struct simul_ioctl_cli *data)
 {
@@ -53,6 +75,12 @@ err:
 	return rc;
 }
 
+int mdclient_get_results(struct kres *data)
+{
+	ge
+
+}
+
 static int simul_ioctl(struct inode *inode, struct file *file,
 	unsigned int cmd, unsigned long arg)
 {
@@ -63,10 +91,15 @@ static int simul_ioctl(struct inode *inode, struct file *file,
 		rc = mdclient_create((struct simul_ioctl_cli *)arg);
 		break;
 	case SIM_IOW_RUN:
+		rc = 0;
+		wake_up(&clients_run);
+		break;
 	case SIM_IOW_RESULTS:
+		rc = mdclient_get_results((struct kres *)arg);
+		break;
 	case SIM_IOW_STATS:
 	default:
-		rc = -EINVAL;
+		rc = -ENOSUP;
 		break;
 	};
 	return rc;
@@ -83,11 +116,25 @@ int simul_release(struct inode *inode, struct file *file)
 	return 0;
 }
 
+static unsigned int simul_poll (struct file * file, poll_table * wait)
+{
+	unsigned int mask = 0;
+
+	poll_wait(file, &clients_wait, wait);
+	if (atomic_read(&clients_cnt) == 0)
+		mask |= POLLIN | POLLRDNORM;
+
+	DPRINT("poll cli %d - %u\n", atomic_read(&clients_cnt), mask);
+	return mask;
+}
+
+
 static struct file_operations fops = {
 	.owner	= THIS_MODULE,
 	.open	= simul_open,
 	.release = simul_release,
 	.ioctl	= simul_ioctl,
+	.poll	= simul_poll,
 };
 
 static struct miscdevice simul_dev = {

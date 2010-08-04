@@ -11,6 +11,7 @@
 
 struct lustre_private {
 	struct vfsmount		*lp_mnt;
+	struct file		**lp_open;
 };
 
 static const char lustre_fs[] = "lustre";
@@ -30,12 +31,15 @@ static struct vfsmount *mount_lustre(char *dev, char *opt)
 	return mnt;
 }
 
-int generic_cli_destroy(struct md_client *cli)
+static int generic_cli_destroy(struct md_client *cli)
 {
 	struct lustre_private *lp = cli->private;
 
 	if (lp == NULL)
 		return 0;
+
+	if (lp->lp_open)
+		kfree(lp->lp_open);
 
 	if (lp->lp_mnt)
 		mntput(lp->lp_mnt);
@@ -48,7 +52,7 @@ int generic_cli_destroy(struct md_client *cli)
 #define LUSTRE_FS "%s:/%s"
 #define LUSTRE_OPT "device=%s"
 
-int generic_cli_create(struct md_client *cli, char *fsname, char *dstnid)
+static int generic_cli_create(struct md_client *cli, char *fsname, char *dstnid)
 {
 	struct lustre_private *ret;
 	char *fs = NULL;
@@ -71,6 +75,12 @@ int generic_cli_create(struct md_client *cli, char *fsname, char *dstnid)
 
 	ret = kmalloc(sizeof *ret, GFP_KERNEL);
 	if (ret == NULL) {
+		rc = -ENOMEM;
+		goto error;
+	}
+	
+	ret->lp_open = kmalloc(sizeof(struct file *) * MAX_OPEN_HANDLES, GFP_KERNEL);
+	if (ret->lp_open == NULL) {
 		rc = -ENOMEM;
 		goto error;
 	}
@@ -117,22 +127,21 @@ int generic_cli_create(struct md_client *cli, char *fsname, char *dstnid)
 
 	return 0;
 error:
-	if (ret)
+	if (ret) {
+		if (ret->lp_open)
+			kfree(ret->lp_open);
 		kfree(ret);
+	}
 	if (opt)
 		kfree(opt);
 	kfree(fs);
 	return rc;
 }
 
-
-
-int generic_cli_cd(struct md_client *cli, const char *pwd)
+static int generic_cli_cd(struct md_client *cli, const char *pwd)
 {
-	struct lustre_private *lp = cli->private;
 	int retval;
 	struct dentry *old_pwd;
-	struct vfsmount *old_pwdmnt = NULL;
 	struct nameidata nd;
 
 	ENTER();
@@ -151,8 +160,6 @@ int generic_cli_cd(struct md_client *cli, const char *pwd)
 
 		if (old_pwd)
 			dput(old_pwd);
-		if (old_pwdmnt)
-			mntput(old_pwdmnt);
 	}
 	path_release(&nd);
 out:
@@ -160,13 +167,11 @@ out:
 	return retval;
 }
 
-int generic_cli_mkdir(struct md_client *cli, const char *pwd)
+static int generic_cli_mkdir(struct md_client *cli, const char *pwd, const int mode)
 {
-	struct lustre_private *lp = cli->private;
 	int retval;
 	struct nameidata nd;
 	struct dentry *dir;
-	long	mode = 0666;
 
 	ENTER();
 	retval = path_lookup(pwd, LOOKUP_DIRECTORY | LOOKUP_PARENT, &nd);
@@ -185,17 +190,31 @@ out:
 	return retval;
 }
 
-int generic_cli_readdir(struct md_client *cli, const char *pwd)
+static int null_cb(void * __buf, const char * name, int namlen, loff_t offset,
+		      u64 ino, unsigned int d_type)
 {
-	struct lustre_private *lp = cli->private;
+	return 0;
+}
 
+static int generic_cli_readdir(struct md_client *cli, const char *pwd)
+{
+	struct file *dir;
+	int retval;
+
+	dir = filp_open(name, O_DIRECTORY, 0000);
+	if (IS_ERR(dir))
+		return PTR_ERR(dir);
+	DPRINT("open finished\n");
+
+	retval = vfs_readdir(dir, null_cb, NULL);
+
+	filp_close(dir);
 
 	return 0;
 }
 
-int generic_cli_unlink(struct md_client *cli, const char *name)
+static int generic_cli_unlink(struct md_client *cli, const char *name)
 {
-	struct lustre_private *lp = cli->private;
 	int retval;
 	struct nameidata nd;
 	struct dentry *child;
@@ -205,13 +224,21 @@ int generic_cli_unlink(struct md_client *cli, const char *name)
 		return retval;
 
 	mutex_lock(&nd.dentry->d_inode->i_mutex);
-	child = lookup_one_len(nd.last.name, nd.dentry, strlen(name));
+	child = lookup_one_len(nd.last.name, nd.dentry, strlen(nd.last.name));
 	retval = PTR_ERR(child);
 	if (!IS_ERR(child)) {
-		if (child->d_inode != NULL)
-			retval = vfs_unlink(nd.dentry->d_inode, child);
-		else
+		if (child->d_inode != NULL) {
+			if (IS_DIR(child->d_inode->i_mode) {
+				retval = vfs_rmdir(nd.dentry->d_inode, child);
+				dput(child);
+			} else {
+				retval = vfs_unlink(nd.dentry->d_inode, child);
+				if (!retval && !(child->d_flags & DCACHE_NFSFS_RENAMED))
+					d_delete(dentry);
+			}
+		} else {
 			retval = -ENOENT;
+		}
 	}
 	mutex_unlock(&nd.dentry->d_inode->i_mutex);
 
@@ -219,24 +246,34 @@ int generic_cli_unlink(struct md_client *cli, const char *name)
 	return retval;
 }
 
-int generic_cli_open(struct md_client *cli, const char *name, 
-		      const long flags, const long reg)
+static int generic_cli_open(struct md_client *cli, const char *name, 
+			const long flags, const long mode, const long reg)
 {
 	struct lustre_private *lp = cli->private;
+	int rc = 0;
 
-	return 0;
+	lp->lp_open[reg] = filp_open(name, flags, mode);
+	if (IS_ERR(lp->lp_open[reg])) {
+		rc = PTR_ERR(lp->lp_open[reg]);
+		lp->lp_open[reg] = NULL;
+	}
+	DPRINT("open finished %d\n", rc);
+	return rc;
 }
 
-int generic_cli_close(struct md_client *cli, const long reg)
+static int generic_cli_close(struct md_client *cli, const long reg)
 {
-	struct lustre_private *lp = cli->private;
+	int rc;
 
-	return 0;
+	if (lp->lp_open[reg] != NULL)
+		rc = filp_close(lp->lp_open[reg], 0);
+	else
+		rc = -EBADFD;
+	return rc;
 }
 
-int generic_cli_stat(struct md_client *cli, const char *name)
+static int generic_cli_stat(struct md_client *cli, const char *name)
 {
-	struct lustre_private *lp = cli->private;
 	int retval;
 	struct nameidata nd;
 	struct kstatfs tmp;
@@ -250,16 +287,87 @@ int generic_cli_stat(struct md_client *cli, const char *name)
 	return retval;
 }
 
-int generic_cli_setattr(struct md_client *cli, const char *name, const long attr)
+static int generic_cli_setattr(struct md_client *cli, const char *name, struct iattr *newattrs)
 {
-	struct lustre_private *lp = cli->private;
+	int retval;
 
-	return 0;
+	retval = path_lookup(name, LOOKUP_DIRECTORY, &nd);
+	if (retval)
+		return retval;
+
+	retval = vfs_permission(&nd, MAY_WRITE);
+	if (retval)
+		goto exit;
+
+	/* Remove suid/sgid on truncate too */
+	newattrs -> ia_valid |= should_remove_suid(nd.dentry);
+
+	mutex_lock(&inode->i_mutex);
+	error = notify_change(nd.dentry, newattrs);
+	mutex_unlock(&inode->i_mutex);
+exit:
+	path_release(&nd);
+
+	return retval;
 }
 
-int generic_cli_lookup(struct md_client *cli, const char *name)
+static int generic_cli_chown(struct md_client *cli, const char *name,
+			    long uid, long gid)
 {
-	struct lustre_private *lp = cli->private;
+	struct iattr newattrs;
+
+	newattrs.ia_valid =  ATTR_CTIME;
+	if (uid != -1) {
+		newattrs.ia_valid |= ATTR_UID;
+		newattrs.ia_uid = uid;
+	}
+	if (gid != -1) {
+		newattrs.ia_valid |= ATTR_GID;
+		newattrs.ia_gid = gid;
+	}
+
+	return generic_cli_setattr(name, &newattrs);
+}
+
+static int generic_cli_chmod(struct md_client *cli, const char *name, long mode)
+{
+	struct iattr newattrs;
+
+	newattrs.ia_mode = (mode & S_IALLUGO);
+	newattrs.ia_valid = ATTR_MODE | ATTR_CTIME;
+
+	return generic_cli_setattr(name, &newattrs);
+}
+
+static int generic_cli_chtime(struct md_client *cli, const char *name, long time)
+{
+	struct iattr newattrs;
+
+	newattrs.ia_valid = ATTR_CTIME | ATTR_MTIME | ATTR_ATIME;
+	if (time != 0) {
+		newattrs.ia_atime.tv_sec = time;
+		newattrs.ia_atime.tv_nsec = 0;
+	} else {
+		newattrs.ia_atime = current_kernel_time();
+	}
+	newattrs.ia_mtime = newattrs.ia_ctime = newattrs.ia_atime;
+
+	return generic_cli_setattr(name, &newattrs);
+}
+
+static int generic_cli_truncate(struct md_client *cli, const char *name, long size)
+{
+	struct iattr newattrs;
+
+	newattrs.ia_size = size;
+	newattrs.ia_valid = ATTR_SIZE | ATTR_CTIME;
+
+	return generic_cli_setattr(name, &newattrs);
+}
+
+
+static int generic_cli_lookup(struct md_client *cli, const char *name)
+{
 	int retval;
 	struct nameidata nd;
 
@@ -271,35 +379,138 @@ int generic_cli_lookup(struct md_client *cli, const char *name)
 	return 0;
 }
 
-int generic_cli_softlink(struct md_client *cli, const char *name,
+static int generic_cli_softlink(struct md_client *cli, const char *name,
 			  const char *linkname)
 {
-	struct lustre_private *lp = cli->private;
+	int retval;
+	struct nameidata nd;
+	struct dentry *old;
+	struct dentry *new;
 
-	return 0;
+	retval = path_lookup(name, LOOKUP_PARENT, &nd);
+	if (retval)
+		return retval;
+
+	old = lookup_one_len(nd.last.name, nd.dentry, strlen(nd.last.name));
+	if (IS_ERR(old)) {
+		retval = PTR_ERR(new);
+		goto exit1;
+	}
+
+	new = lookup_create(&nd, 0);
+	retval = PTR_ERR(new);
+	if (!IS_ERR(new)) {
+		retval = vfs_link(nd.dentry, old->d_inode, new);
+		dput(new);
+	}
+	mutex_unlock(&nd.dentry->d_inode->i_mutex); // lookup_create
+exit1:
+	path_release(&nd);
+	return retval;
 }
 
-int generic_cli_hardlink(struct md_client *cli, const char *name,
+static int generic_cli_hardlink(struct md_client *cli, const char *name,
 			  const char *linkname)
 {
-	struct lustre_private *lp = cli->private;
+	int retval;
+	struct nameidata nd;
+	struct dentry *old;
+	struct dentry *new;
 
-	return 0;
+	retval = path_lookup(name, LOOKUP_PARENT, &nd);
+	if (retval)
+		return retval;
+
+	old = lookup_one_len(nd.last.name, nd.dentry, strlen(nd.last.name));
+	if (IS_ERR(old)) {
+		retval = PTR_ERR(new);
+		goto exit1;
+	}
+
+	new = lookup_create(&nd, 0);
+	retval = PTR_ERR(new);
+	if (!IS_ERR(new)) {
+		retval = vfs_link(nd.dentry, old->d_inode, new);
+		dput(new);
+	}
+	mutex_unlock(&nd.dentry->d_inode->i_mutex); // lookup_create
+exit1:
+	path_release(&nd);
+	return retval;
 }
 
-int generic_cli_readlink(struct md_client *cli,  const char *linkname)
+static int generic_cli_readlink(struct md_client *cli,  const char *linkname)
 {
-	struct lustre_private *lp = cli->private;
+	int retval;
+	struct nameidata nd;
+	struct inode *inode;
+	char buf[20];
+
+	retval = path_lookup(name, 0, &nd);
+	if (retval)
+		return retval;
+
+	inode = nd.dentry->d_inode;
+
+	retval = -EINVAL;
+	if (inode && inode->i_op && inode->i_op->readlink) {
+		touch_atime(nd.mnt, nd.dentry);
+		retval = inode->i_op->readlink(nd.dentry, buf, sizeof buf);
+	}
+
+	path_release(&nd);
+	return retval;
 
 	return 0;
 }
 
-int generic_cli_rename(struct md_client *cli, const char *oldname,
+static int generic_cli_rename(struct md_client *cli, const char *oldname,
 			  const char *newname)
 {
-	struct lustre_private *lp = cli->private;
+	int retval;
+	struct nameidata ndold;
+	struct nameidata ndnew;
+	struct dentry *p;
+	struct dentry *old;
+	struct dentry *new;
 
-	return 0;
+	retval = path_lookup(oldname, LOOKUP_DIRECTORY | LOOKUP_PARENT, &ndold);
+	if (retval)
+		return retval;
+
+	retval = path_lookup(newname, LOOKUP_DIRECTORY | LOOKUP_PARENT, &ndnew);
+	if (retval)
+		goto exit1;
+
+	p = lock_rename(&ndold.dentry, &ndnew.dentry);
+	old = lookup_one_len(ndold.last.name, ndold.dentry, strlen(ndold.last.name));
+	if (IS_ERR(old)) {
+		retval = PTR_ERR(old);
+		goto exit2;
+	}
+
+	new = lookup_one_len(ndnew.last.name, ndnew.dentry, strlen(ndnew.last.name));
+	if (IS_ERR(new)) {
+		retval = PTR_ERR(new);
+		goto exit3;
+	}
+	if ((new == p) || (old == p)) {
+		retval = -EINVAL;
+		goto exit4;
+	}
+
+	retval = vfs_rename(ndold.dentry->d_inode, old,
+			    ndnew.dentry->d_inode, new);
+exit4:
+	dput(new);
+exit3:
+	dput(old);
+exit2:
+	unlock_rename(&ndold.dentry, &ndnew.dentry);
+	path_release(&ndnew);
+exit1:
+	path_release(&ndold);
+	return retval;
 }
 
 struct md_client generic_cli = {
@@ -313,7 +524,10 @@ struct md_client generic_cli = {
 	.open		= generic_cli_open,
 	.close		= generic_cli_close,
 	.stat		= generic_cli_stat,
-	.setattr	= generic_cli_setattr,
+	.chmod		= generic_cli_chmod,
+	.chown		= generic_cli_chown,
+	.chtime		= generic_cli_chtime,
+	.truncate	= generic_cli_time,
 	.lookup		= generic_cli_lookup,
 	.softlink	= generic_cli_softlink,
 	.hardlink	= generic_cli_hardlink,
