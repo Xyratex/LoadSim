@@ -13,13 +13,16 @@ struct vm_program;
  VM_MD_CALL
  */
 int encode_cd(struct vm_program *prg, char *dir);
-int encode_mkdir(struct vm_program *prg, char *dir);
+int encode_mkdir(struct vm_program *prg, char *dir, int mode);
 int encode_readdir(struct vm_program *prg, char *dir);
 int encode_unlink(struct vm_program *prg, char *name);
-int encode_open(struct vm_program *prg, char *name, int flags, int reg);
+int encode_open(struct vm_program *prg, char *name, int flags, int mode, int reg);
 int encode_close(struct vm_program *prg, int reg);
 int encode_stat(struct vm_program *prg, char *file);
-int encode_setattr(struct vm_program *prg, char *name, int flags);
+int encode_chown(struct vm_program *prg, char *name, int uid, int gid);
+int encode_chmod(struct vm_program *prg, char *name, int mode);
+int encode_chtime(struct vm_program *prg, char *name, int time);
+int encode_truncate(struct vm_program *prg, char *name, int size);
 int encode_softlink(struct vm_program *prg, char *old, char *new);
 int encode_hardlink(struct vm_program *prg, char *old, char *new);
 int encode_readlink(struct vm_program *prg, char *name);

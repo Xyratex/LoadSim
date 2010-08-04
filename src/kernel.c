@@ -3,9 +3,11 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <poll.h>
 
 #include "md_client.h"
 #include "kapi.h"
+#include "debug.h"
 
 static int api_fd = -1;
 
@@ -18,7 +20,7 @@ int simul_api_open()
 	return 0;
 }
 
-int simul_api_cli_create(char *cliname, struct server_link *sl,
+int simul_api_cli_create(char *cliname, long cliid, struct server_link *sl,
 			 void *data, int size)
 {
 	struct simul_ioctl_cli _data;
@@ -27,6 +29,7 @@ int simul_api_cli_create(char *cliname, struct server_link *sl,
 		return -ENOSYS;
 
 	_data.sic_name = cliname;
+	_data.sic_cli_id = cliid;
 	_data.sic_dst_fs = sl->sl_fs;
 	_data.sic_dst_nid = sl->sl_nid;
 	_data.sic_program = data;
@@ -42,15 +45,37 @@ int simul_api_run()
 
 int simul_api_wait_finished()
 {
-	/* XXX pool*/
+	struct pollfd _poll;
+	int rc;
+
+	if (api_fd == -1)
+		return -ENOSYS;
+
+	_poll.fd = api_fd;
+	_poll.events = POLLIN;
+
+	while (1) {
+		rc = poll(&_poll, 1, 1);
+		DPRINT("rc %d - %x\n", rc, _poll.revents);
+		if (rc < 0) {
+			rc = -errno;
+			break;
+		}
+		if ((rc > 0) && (_poll.revents & POLLIN)) {
+			rc = 0;
+			break;
+		}
+	}
+
+	return rc;
 }
 
-int simul_api_get_results(long *res)
+int simul_api_get_results(struct kres *res)
 {
 	if (api_fd == -1)
 		return -ENOSYS;
 
-	return ioctl(api_fd, SIM_IOW_RESULTS, res);
+	return ioctl(api_fd, SIM_IOW_RESULTS, (long)res);
 }
 
 int simul_api_close()

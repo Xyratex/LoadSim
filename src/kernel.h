@@ -2,6 +2,11 @@
 #define __SIMUL_API_
 
 struct server_link;
+struct kres {
+	long k_cli;
+	long k_res;
+	long k_ip;
+};
 
 /**
  userland to kernel interface API, userland part.
@@ -20,7 +25,7 @@ int simul_api_open(void);
  create one test client and upload on it.
 
  */
-int simul_api_cli_create(char *cliname, struct server_link *sl,
+int simul_api_cli_create(char *cliname, long cliid, struct server_link *sl,
 			 void *data, int size);
 
 /**
@@ -36,7 +41,7 @@ int simul_api_wait_finished(void);
 /**
  obtain results from finished clients
  */
-int simul_api_get_results(long *res);
+int simul_api_get_results(struct kres *res);
 
 /**
  destroy kernel test environment and close kernel<>userland communication

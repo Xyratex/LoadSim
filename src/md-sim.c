@@ -24,5 +24,7 @@ int main(int argc, char *argv[])
 
 	simul_api_wait_finished();
 
+	clients_get_stats();
+
 	simul_api_close();
 }

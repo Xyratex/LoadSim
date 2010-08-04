@@ -20,16 +20,16 @@ int yywrap()
 	int   intval;
 }
 
-%token <strval> STRING TOK_IP TOK_ID TOK_NID
-%token <intval> TOK_EXP_STATUS TOK_NUMBER
+%token <strval> QSTRING TOK_IP TOK_ID TOK_NID
+%token <intval> TOK_EXP_STATUS TOK_NUMBER TOK_O_FLAG
 
 %token TOK_UNLINK_CMD TOK_CD_CMD
 %token TOK_OPEN_CMD TOK_CLOSE_CMD
-%token TOK_STAT_CMD TOK_SETATTR_CMD
+%token TOK_STAT_CMD TOK_CHMOD_CMD TOK_CHOWN_CMD TOK_CHTIME_CMD TOK_TRUNCATE_CMD
 %token TOK_MKDIR_CMD TOK_READDIR_CMD
 %token TOK_SOFTLINK_CMD TOK_HARDLINK_CMD TOK_READLINK_CMD
 
-%token TOK_UID TOK_GID
+%token TOK_UID_CMD TOK_GID_CMD
 %token TOK_WAITRACE_CMD TOK_SLEEP_CMD
 
 %token TOK_EXPECTED
@@ -39,8 +39,9 @@ int yywrap()
 
 %token TOK_SERVER TOK_CLIENT
 
-%type<strval> literal quoted_name
 %type<intval> expected open_flags
+
+%left	'|'
 
 %%
 main_commands:
@@ -63,7 +64,7 @@ main_command:
  'nid' is network address to connect
  */
 server_set:
-	TOK_SERVER TOK_ID TOK_NID literal
+	TOK_SERVER TOK_ID TOK_NID QSTRING
 	{
 		int ret;
 		ret = server_create($2, $4, $3);
@@ -238,7 +239,7 @@ sleep:
 	;
 
 chuid:
-	TOK_UID	TOK_NUMBER
+	TOK_UID_CMD TOK_NUMBER
 	{
 		int ret;
 
@@ -249,7 +250,7 @@ chuid:
 	;
 
 chgid:
-	TOK_UID	TOK_NUMBER
+	TOK_GID_CMD TOK_NUMBER
 	{
 		int ret;
 
@@ -306,16 +307,17 @@ md_cmd:
  create a directory
  format of operation
 
- mkdir "name"
+ mkdir "name" mode
  whereis 
    "name" is quoted name of directory
+   mode is
  */
 mkdir_cmd:
-	TOK_MKDIR_CMD quoted_name
+	TOK_MKDIR_CMD QSTRING TOK_NUMBER
 	{
 		int ret;
 
-		ret = encode_mkdir(procedure_current(), $2);
+		ret = encode_mkdir(procedure_current(), $2, $3);
 		free($2);
 
 		if (ret)
@@ -332,7 +334,7 @@ mkdir_cmd:
    "name" is quoted name of directory
  */
 cd_cmd:
-	TOK_CD_CMD quoted_name
+	TOK_CD_CMD QSTRING
 	{
 		int ret;
 
@@ -349,7 +351,7 @@ cd_cmd:
  
  */
 readdir_cmd:
-	TOK_READDIR_CMD quoted_name
+	TOK_READDIR_CMD QSTRING
 	{
 		int ret;
 
@@ -369,7 +371,7 @@ readdir_cmd:
    "name" is quoted name of directory
  */
 unlink_cmd:
-	TOK_UNLINK_CMD quoted_name
+	TOK_UNLINK_CMD QSTRING
 	{
 		int ret;
 
@@ -384,19 +386,20 @@ unlink_cmd:
  open file in directory
  format of operation is
  
- open "name" flags regnum
+ open "name" flags mode regnum
 
  where is
   name quoted file name
   open_mode - flags to open. see open(2)
+  mode - 
   regnum - index in registers file to store file handle
  */
 open_cmd:
-	TOK_OPEN_CMD quoted_name open_flags TOK_NUMBER
+	TOK_OPEN_CMD QSTRING open_flags TOK_NUMBER TOK_NUMBER
 	{
 		int ret;
 
-		ret = encode_open(procedure_current(), $2, $3, $4);
+		ret = encode_open(procedure_current(), $2, $3, $4, $5);
 		free($2);
 		if (ret)
 			YYABORT;
@@ -405,11 +408,8 @@ open_cmd:
 
 
 open_flags:
-	literal
-	{
-		/** verify */
-		$$ = $1;
-	}
+	TOK_O_FLAG	{ $$ = $1; }
+	| open_flags '|' TOK_O_FLAG { $$ = $1 | $3; }
 	;
 
 /**
@@ -442,7 +442,7 @@ close_cmd:
   "name" quoted file name
  */
 stat_cmd:
-	TOK_STAT_CMD quoted_name
+	TOK_STAT_CMD QSTRING
 	{
 		int ret;
 
@@ -463,11 +463,54 @@ stat_cmd:
    mode is numberic value of file mode bits
  */
 setattr_cmd:
-	TOK_SETATTR_CMD quoted_name TOK_NUMBER
+	chmod_cmd
+	| chown_cmd
+	| chtime_cmd
+	| truncate_cmd
+	;
+
+chmod_cmd:
+	TOK_CHMOD_CMD QSTRING TOK_NUMBER
 	{
 		int ret;
 
-		ret = encode_setattr(procedure_current(), $2, $3);
+		ret = encode_chmod(procedure_current(), $2, $3);
+		free($2);
+		if (ret)
+			YYABORT;
+	}
+	;
+
+chown_cmd:
+	TOK_CHOWN_CMD QSTRING TOK_NUMBER ':' TOK_NUMBER
+	{
+		int ret;
+
+		ret = encode_chown(procedure_current(), $2, $3, $5);
+		free($2);
+		if (ret)
+			YYABORT;
+	}
+	;
+
+chtime_cmd:
+	TOK_CHTIME_CMD QSTRING TOK_NUMBER
+	{
+		int ret;
+
+		ret = encode_chtime(procedure_current(), $2, $3);
+		free($2);
+		if (ret)
+			YYABORT;
+	}
+	;
+
+truncate_cmd:
+	TOK_TRUNCATE_CMD QSTRING TOK_NUMBER
+	{
+		int ret;
+
+		ret = encode_truncate(procedure_current(), $2, $3);
 		free($2);
 		if (ret)
 			YYABORT;
@@ -481,7 +524,7 @@ setattr_cmd:
  softlink "oldname" "newname" 
  */
 mksln_cmd:
-	TOK_SOFTLINK_CMD quoted_name quoted_name
+	TOK_SOFTLINK_CMD QSTRING QSTRING
 	{
 		int ret;
 
@@ -500,7 +543,7 @@ mksln_cmd:
  hardlink "oldname" "newname" 
  */
 mkhln_cmd:
-	TOK_HARDLINK_CMD quoted_name quoted_name
+	TOK_HARDLINK_CMD QSTRING QSTRING
 	{
 		int ret;
 
@@ -519,7 +562,7 @@ mkhln_cmd:
  readlink "name"
  */
 readln_cmd:
-	TOK_READLINK_CMD quoted_name
+	TOK_READLINK_CMD QSTRING
 	{
 		int ret;
 
@@ -540,17 +583,5 @@ expected:
 		if (ret)
 			YYABORT;
 	}
-	;
-
-quoted_name:
-	  '"' literal '"'
-	{
-		$$ = $2;
-	}
-	;
-
-literal:
-	  STRING
-	| TOK_ID
 	;
 %%

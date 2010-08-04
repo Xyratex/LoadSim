@@ -26,10 +26,15 @@ int encode_cd(struct vm_program *vprg, char *dir)
 	return vm_encode(vprg, VM_CMD_CALL, arg);
 }
 
-int encode_mkdir(struct vm_program *vprg,char *dir)
+int encode_mkdir(struct vm_program *vprg, char *dir, int mode)
 {
 	int ret;
 	union cmd_arg arg;
+
+	arg.cd_long = mode;
+	ret = vm_encode(vprg, VM_CMD_PUSHL, arg);
+	if (ret)
+		return ret;
 
 	arg.cd_string = dir;
 	ret = vm_encode(vprg, VM_CMD_PUSHS, arg);
@@ -40,7 +45,7 @@ int encode_mkdir(struct vm_program *vprg,char *dir)
 	return vm_encode(vprg, VM_CMD_CALL, arg);
 }
 
-int encode_readdir(struct vm_program *vprg,char *dir)
+int encode_readdir(struct vm_program *vprg, char *dir)
 {
 	int ret;
 	union cmd_arg arg;
@@ -74,12 +79,17 @@ int encode_unlink(struct vm_program *vprg, char *name)
  pushs name
  call [open]
  */
-int encode_open(struct vm_program *vprg, char *name, int flags, int reg)
+int encode_open(struct vm_program *vprg, char *name, int flags, int mode, int reg)
 {
 	int ret;
 	union cmd_arg arg;
 
 	arg.cd_long = reg;
+	ret = vm_encode(vprg, VM_CMD_PUSHL, arg);
+	if (ret)
+		return ret;
+
+	arg.cd_long = mode;
 	ret = vm_encode(vprg, VM_CMD_PUSHL, arg);
 	if (ret)
 		return ret;
@@ -126,7 +136,31 @@ int encode_stat(struct vm_program *vprg, char *name)
 	return vm_encode(vprg, VM_CMD_CALL, arg);
 }
 
-int encode_setattr(struct vm_program *vprg, char *name, int flags)
+int encode_chown(struct vm_program *vprg, char *name, int uid, int gid)
+{
+	int ret;
+	union cmd_arg arg;
+
+	arg.cd_string = name;
+	ret = vm_encode(vprg, VM_CMD_PUSHS, arg);
+	if (ret)
+		return ret;
+
+	arg.cd_long = uid;
+	ret = vm_encode(vprg, VM_CMD_PUSHL, arg);
+	if (ret)
+		return ret;
+
+	arg.cd_long = gid;
+	ret = vm_encode(vprg, VM_CMD_PUSHL, arg);
+	if (ret)
+		return ret;
+
+	arg.cd_call = VM_MD_CALL_CHOWN;
+	return vm_encode(vprg, VM_CMD_CALL, arg);
+}
+
+int encode_chmod(struct vm_program *vprg, char *name, int flags)
 {
 	int ret;
 	union cmd_arg arg;
@@ -141,7 +175,45 @@ int encode_setattr(struct vm_program *vprg, char *name, int flags)
 	if (ret)
 		return ret;
 
-	arg.cd_call = VM_MD_CALL_SETATTR;
+	arg.cd_call = VM_MD_CALL_CHMOD;
+	return vm_encode(vprg, VM_CMD_CALL, arg);
+}
+
+int encode_chtime(struct vm_program *vprg, char *name, int flags)
+{
+	int ret;
+	union cmd_arg arg;
+
+	arg.cd_string = name;
+	ret = vm_encode(vprg, VM_CMD_PUSHS, arg);
+	if (ret)
+		return ret;
+
+	arg.cd_long = flags;
+	ret = vm_encode(vprg, VM_CMD_PUSHL, arg);
+	if (ret)
+		return ret;
+
+	arg.cd_call = VM_MD_CALL_CHTIME;
+	return vm_encode(vprg, VM_CMD_CALL, arg);
+}
+
+int encode_truncate(struct vm_program *vprg, char *name, int flags)
+{
+	int ret;
+	union cmd_arg arg;
+
+	arg.cd_string = name;
+	ret = vm_encode(vprg, VM_CMD_PUSHS, arg);
+	if (ret)
+		return ret;
+
+	arg.cd_long = flags;
+	ret = vm_encode(vprg, VM_CMD_PUSHL, arg);
+	if (ret)
+		return ret;
+
+	arg.cd_call = VM_MD_CALL_TRUNCATE;
 	return vm_encode(vprg, VM_CMD_CALL, arg);
 }
 
