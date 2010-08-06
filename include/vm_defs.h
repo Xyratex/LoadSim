@@ -12,6 +12,10 @@ enum {
 	 function finished with error
 	*/
 	VM_RET_FAIL  = 1,
+	/**
+	 maximal races in system
+	*/
+	VM_MAX_RACES = 200;
 };
 
 /**

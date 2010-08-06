@@ -77,7 +77,7 @@ err:
 
 int mdclient_get_results(struct kres *data)
 {
-	ge
+	
 
 }
 
