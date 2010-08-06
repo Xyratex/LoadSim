@@ -317,7 +317,7 @@ int encode_race(struct vm_program *vprg, int raceid)
 	int ret;
 	union cmd_arg arg;
 
-	if (raceid > VM_MAX_RACE)
+	if (raceid > VM_MAX_RACES)
 		return -EINVAL;
 
 	arg.cd_long = raceid;

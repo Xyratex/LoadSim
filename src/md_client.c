@@ -6,6 +6,7 @@
 #include "md_client.h"
 #include "kernel.h"
 #include "vm_compile.h"
+#include "kapi.h" /* XXXX */
 
 static struct server_link sl;
 
@@ -18,7 +19,7 @@ int server_create(char *name, char *fs, char *nid)
 	return 0;
 }
 
-LIST_HEAD(clients);
+static LIST_HEAD(clients);
 static long cliidx;
 
 int client_create(char *name, char *program)
@@ -66,8 +67,9 @@ static unsigned int clients_get_count()
 	unsigned int i = 0;
 	struct list_head *tmp;
 
-	list_for_each(&tmp, &clients)
+	list_for_each(tmp, &clients) {
 		i ++;
+	}
 
 	return i;
 }
@@ -76,7 +78,7 @@ static struct md_client *clients_find_by_id(long id)
 {
 	struct md_client *cli;
 
-	list_for_each_entry(&cli, &clients, mdc_link)
+	list_for_each_entry(cli, &clients, mdc_link)
 		if (cli->mdc_id == id)
 			return cli;
 
@@ -86,7 +88,7 @@ static struct md_client *clients_find_by_id(long id)
 int clients_get_stats(void)
 {
 	int clicnt = clients_get_count();
-	struct kres *data;
+	struct simul_res *data;
 	int rc = 0;
 
 	if (clicnt == 0)
@@ -102,12 +104,12 @@ int clients_get_stats(void)
 		struct md_client *cli;
 
 		for (i = 0; i < clicnt; i++) {
-			cli = clients_find_by_id(data[i].k_cli);
+			cli = clients_find_by_id(data[i].sr_cli);
 			if (cli != NULL) {
-				cli->mdc_rc = data[i].k_res;
-				cli->mdc_op = data[i].k_ip;
+				cli->mdc_rc = data[i].sr_res;
+				cli->mdc_op = data[i].sr_ip;
 			} else
-				rc = -ENOSRC;
+				rc = -ESRCH;
 		}
 	}
 

@@ -29,7 +29,7 @@ int simul_api_cli_create(char *cliname, long cliid, struct server_link *sl,
 		return -ENOSYS;
 
 	_data.sic_name = cliname;
-	_data.sic_cli_id = cliid;
+	_data.sic_id = cliid;
 	_data.sic_dst_fs = sl->sl_fs;
 	_data.sic_dst_nid = sl->sl_nid;
 	_data.sic_program = data;
@@ -70,7 +70,7 @@ int simul_api_wait_finished()
 	return rc;
 }
 
-int simul_api_get_results(struct kres *res)
+int simul_api_get_results(struct simul_res *res)
 {
 	if (api_fd == -1)
 		return -ENOSYS;

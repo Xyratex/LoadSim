@@ -2,11 +2,7 @@
 #define __SIMUL_API_
 
 struct server_link;
-struct kres {
-	long k_cli;
-	long k_res;
-	long k_ip;
-};
+struct simul_res;
 
 /**
  userland to kernel interface API, userland part.
@@ -41,7 +37,7 @@ int simul_api_wait_finished(void);
 /**
  obtain results from finished clients
  */
-int simul_api_get_results(struct kres *res);
+int simul_api_get_results(struct simul_res *res);
 
 /**
  destroy kernel test environment and close kernel<>userland communication
