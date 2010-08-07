@@ -9,7 +9,7 @@
 #include "kdebug.h"
 #include "clients/client.h"
 
-struct lustre_private {
+struct md_private {
 	struct vfsmount		*lp_mnt;
 	struct file		**lp_open;
 };
@@ -31,10 +31,8 @@ static struct vfsmount *mount_lustre(char *dev, char *opt)
 	return mnt;
 }
 
-static int generic_cli_destroy(struct md_client *cli)
+static int generic_cli_destroy(struct md_private *lp)
 {
-	struct lustre_private *lp = cli->private;
-
 	if (lp == NULL)
 		return 0;
 
@@ -52,15 +50,13 @@ static int generic_cli_destroy(struct md_client *cli)
 #define LUSTRE_FS "%s:/%s"
 #define LUSTRE_OPT "device=%s"
 
-static int generic_cli_create(struct md_client *cli, char *fsname, char *dstnid)
+static int generic_cli_create(struct md_private **cli, char *fsname, char *dstnid)
 {
-	struct lustre_private *ret;
+	struct md_private *ret = NULL;
 	char *fs = NULL;
 	char *opt = NULL;
 	struct fs_struct old_fs;
 	int rc;
-
-	cli->private = NULL;
 
 	rc = snprintf(NULL, 0, LUSTRE_FS, dstnid, fsname) + 1;
 	fs = kmalloc(rc, GFP_KERNEL);
@@ -122,7 +118,7 @@ static int generic_cli_create(struct md_client *cli, char *fsname, char *dstnid)
 	if (old_fs.altrootmnt)
 		mntput(old_fs.altrootmnt);
 
-	cli->private = ret;
+	*cli = ret;
 	kfree(fs);
 
 	return 0;
@@ -138,7 +134,7 @@ error:
 	return rc;
 }
 
-static int generic_cli_cd(struct md_client *cli, const char *pwd)
+static int generic_cli_cd(struct md_private *cli, const char *pwd)
 {
 	int retval;
 	struct dentry *old_pwd;
@@ -167,7 +163,7 @@ out:
 	return retval;
 }
 
-static int generic_cli_mkdir(struct md_client *cli, const char *pwd, const int mode)
+static int generic_cli_mkdir(struct md_private *cli, const char *pwd, const int mode)
 {
 	int retval;
 	struct nameidata nd;
@@ -196,7 +192,7 @@ static int null_cb(void * __buf, const char * name, int namlen, loff_t offset,
 	return 0;
 }
 
-static int generic_cli_readdir(struct md_client *cli, const char *pwd)
+static int generic_cli_readdir(struct md_private *cli, const char *name)
 {
 	struct file *dir;
 	int retval;
@@ -208,12 +204,12 @@ static int generic_cli_readdir(struct md_client *cli, const char *pwd)
 
 	retval = vfs_readdir(dir, null_cb, NULL);
 
-	filp_close(dir);
+	filp_close(dir, 0);
 
 	return 0;
 }
 
-static int generic_cli_unlink(struct md_client *cli, const char *name)
+static int generic_cli_unlink(struct md_private *cli, const char *name)
 {
 	int retval;
 	struct nameidata nd;
@@ -228,13 +224,13 @@ static int generic_cli_unlink(struct md_client *cli, const char *name)
 	retval = PTR_ERR(child);
 	if (!IS_ERR(child)) {
 		if (child->d_inode != NULL) {
-			if (IS_DIR(child->d_inode->i_mode) {
+			if (S_ISDIR(child->d_inode->i_mode)) {
 				retval = vfs_rmdir(nd.dentry->d_inode, child);
 				dput(child);
 			} else {
 				retval = vfs_unlink(nd.dentry->d_inode, child);
 				if (!retval && !(child->d_flags & DCACHE_NFSFS_RENAMED))
-					d_delete(dentry);
+					d_delete(child);
 			}
 		} else {
 			retval = -ENOENT;
@@ -246,10 +242,9 @@ static int generic_cli_unlink(struct md_client *cli, const char *name)
 	return retval;
 }
 
-static int generic_cli_open(struct md_client *cli, const char *name, 
+static int generic_cli_open(struct md_private *lp, const char *name, 
 			const long flags, const long mode, const long reg)
 {
-	struct lustre_private *lp = cli->private;
 	int rc = 0;
 
 	lp->lp_open[reg] = filp_open(name, flags, mode);
@@ -261,7 +256,7 @@ static int generic_cli_open(struct md_client *cli, const char *name,
 	return rc;
 }
 
-static int generic_cli_close(struct md_client *cli, const long reg)
+static int generic_cli_close(struct md_private *lp, const long reg)
 {
 	int rc;
 
@@ -272,7 +267,7 @@ static int generic_cli_close(struct md_client *cli, const long reg)
 	return rc;
 }
 
-static int generic_cli_stat(struct md_client *cli, const char *name)
+static int generic_cli_stat(struct md_private *cli, const char *name)
 {
 	int retval;
 	struct nameidata nd;
@@ -287,9 +282,10 @@ static int generic_cli_stat(struct md_client *cli, const char *name)
 	return retval;
 }
 
-static int generic_cli_setattr(struct md_client *cli, const char *name, struct iattr *newattrs)
+static int generic_cli_setattr(const char *name, struct iattr *newattrs)
 {
 	int retval;
+	struct nameidata nd;
 
 	retval = path_lookup(name, LOOKUP_DIRECTORY, &nd);
 	if (retval)
@@ -299,19 +295,19 @@ static int generic_cli_setattr(struct md_client *cli, const char *name, struct i
 	if (retval)
 		goto exit;
 
-	/* Remove suid/sgid on truncate too */
-	newattrs -> ia_valid |= should_remove_suid(nd.dentry);
+	/* Remove suid/sgid if need */
+	remove_suid(nd.dentry);
 
-	mutex_lock(&inode->i_mutex);
-	error = notify_change(nd.dentry, newattrs);
-	mutex_unlock(&inode->i_mutex);
+	mutex_lock(&nd.dentry->d_inode->i_mutex);
+	retval = notify_change(nd.dentry, newattrs);
+	mutex_unlock(&nd.dentry->d_inode->i_mutex);
 exit:
 	path_release(&nd);
 
 	return retval;
 }
 
-static int generic_cli_chown(struct md_client *cli, const char *name,
+static int generic_cli_chown(struct md_private *cli, const char *name,
 			    long uid, long gid)
 {
 	struct iattr newattrs;
@@ -329,7 +325,7 @@ static int generic_cli_chown(struct md_client *cli, const char *name,
 	return generic_cli_setattr(name, &newattrs);
 }
 
-static int generic_cli_chmod(struct md_client *cli, const char *name, long mode)
+static int generic_cli_chmod(struct md_private *cli, const char *name, long mode)
 {
 	struct iattr newattrs;
 
@@ -339,7 +335,7 @@ static int generic_cli_chmod(struct md_client *cli, const char *name, long mode)
 	return generic_cli_setattr(name, &newattrs);
 }
 
-static int generic_cli_chtime(struct md_client *cli, const char *name, long time)
+static int generic_cli_chtime(struct md_private *cli, const char *name, long time)
 {
 	struct iattr newattrs;
 
@@ -355,7 +351,7 @@ static int generic_cli_chtime(struct md_client *cli, const char *name, long time
 	return generic_cli_setattr(name, &newattrs);
 }
 
-static int generic_cli_truncate(struct md_client *cli, const char *name, long size)
+static int generic_cli_truncate(struct md_private *cli, const char *name, long size)
 {
 	struct iattr newattrs;
 
@@ -366,7 +362,7 @@ static int generic_cli_truncate(struct md_client *cli, const char *name, long si
 }
 
 
-static int generic_cli_lookup(struct md_client *cli, const char *name)
+static int generic_cli_lookup(struct md_private *cli, const char *name)
 {
 	int retval;
 	struct nameidata nd;
@@ -379,7 +375,7 @@ static int generic_cli_lookup(struct md_client *cli, const char *name)
 	return 0;
 }
 
-static int generic_cli_softlink(struct md_client *cli, const char *name,
+static int generic_cli_softlink(struct md_private *cli, const char *name,
 			  const char *linkname)
 {
 	int retval;
@@ -393,7 +389,7 @@ static int generic_cli_softlink(struct md_client *cli, const char *name,
 
 	old = lookup_one_len(nd.last.name, nd.dentry, strlen(nd.last.name));
 	if (IS_ERR(old)) {
-		retval = PTR_ERR(new);
+		retval = PTR_ERR(old);
 		goto exit1;
 	}
 
@@ -409,7 +405,7 @@ exit1:
 	return retval;
 }
 
-static int generic_cli_hardlink(struct md_client *cli, const char *name,
+static int generic_cli_hardlink(struct md_private *cli, const char *name,
 			  const char *linkname)
 {
 	int retval;
@@ -423,7 +419,7 @@ static int generic_cli_hardlink(struct md_client *cli, const char *name,
 
 	old = lookup_one_len(nd.last.name, nd.dentry, strlen(nd.last.name));
 	if (IS_ERR(old)) {
-		retval = PTR_ERR(new);
+		retval = PTR_ERR(old);
 		goto exit1;
 	}
 
@@ -439,14 +435,14 @@ exit1:
 	return retval;
 }
 
-static int generic_cli_readlink(struct md_client *cli,  const char *linkname)
+static int generic_cli_readlink(struct md_private *cli, const char *linkname)
 {
 	int retval;
 	struct nameidata nd;
 	struct inode *inode;
 	char buf[20];
 
-	retval = path_lookup(name, 0, &nd);
+	retval = path_lookup(linkname, 0, &nd);
 	if (retval)
 		return retval;
 
@@ -464,7 +460,7 @@ static int generic_cli_readlink(struct md_client *cli,  const char *linkname)
 	return 0;
 }
 
-static int generic_cli_rename(struct md_client *cli, const char *oldname,
+static int generic_cli_rename(struct md_private *cli, const char *oldname,
 			  const char *newname)
 {
 	int retval;
@@ -482,7 +478,7 @@ static int generic_cli_rename(struct md_client *cli, const char *oldname,
 	if (retval)
 		goto exit1;
 
-	p = lock_rename(&ndold.dentry, &ndnew.dentry);
+	p = lock_rename(ndold.dentry, ndnew.dentry);
 	old = lookup_one_len(ndold.last.name, ndold.dentry, strlen(ndold.last.name));
 	if (IS_ERR(old)) {
 		retval = PTR_ERR(old);
@@ -506,7 +502,7 @@ exit4:
 exit3:
 	dput(old);
 exit2:
-	unlock_rename(&ndold.dentry, &ndnew.dentry);
+	unlock_rename(ndold.dentry, ndnew.dentry);
 	path_release(&ndnew);
 exit1:
 	path_release(&ndold);
@@ -527,7 +523,7 @@ struct md_client generic_cli = {
 	.chmod		= generic_cli_chmod,
 	.chown		= generic_cli_chown,
 	.chtime		= generic_cli_chtime,
-	.truncate	= generic_cli_time,
+	.truncate	= generic_cli_truncate,
 	.lookup		= generic_cli_lookup,
 	.softlink	= generic_cli_softlink,
 	.hardlink	= generic_cli_hardlink,

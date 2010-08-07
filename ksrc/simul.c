@@ -6,13 +6,15 @@
 #include <linux/miscdevice.h>
 #include <linux/wait.h>
 #include <linux/poll.h>
+#include <linux/vmalloc.h>
+#include <linux/errno.h>
 #include <asm/atomic.h>
 
 #include "kapi.h"
 #include "kdebug.h"
 #include "vm_defs.h" /* register / unregister */
 #include "vm_api.h"
-#include "md_env.h"
+#include "env.h"
 
 struct inode;
 
@@ -32,23 +34,23 @@ static DECLARE_WAIT_QUEUE_HEAD(clients_run);
 
 static int client_thread(void *data)
 {
-	struct md_env *env;
+	struct simul_env *env;
 	int rc;
 
-	rc = md_client_create(&env, data);
+	rc = env_create(&env, data);
 	complete(&start);
 	DPRINT("cli create %d - %p\n", rc, env);
 	if (rc < 0)
 		return rc;
 
-	wait_event(&clients_run, state != SIM_SETUP);
+	wait_event(clients_run, state != SIM_SETUP);
 	if (state == SIM_TERM)
 		return 0;
 
 	atomic_inc(&clients_cnt);
 	/* wait until run event */
 	DPRINT("thread run\n");
-	vm_interpret_run(env->mde_vm);
+	vm_interpret_run(env->se_vm);
 
 	atomic_dec(&clients_cnt);
 	wake_up(&clients_wait);
@@ -56,17 +58,21 @@ static int client_thread(void *data)
 	return 0;
 }
 
-static int mdclient_create(struct simul_ioctl_cli *data)
+static int client_create(struct simul_ioctl_cli __user *d)
 {
 	int rc = 0;
 	struct task_struct *p;
+	struct simul_ioctl_cli data;
+
+	if (copy_from_user(&data, d, sizeof data))
+		return -EFAULT;
 
 	init_completion(&start);
-	p = kthread_create(client_thread, data, data->sic_name);
+	p = kthread_create(client_thread, &data, data.sic_name);
 	if (IS_ERR(p)) {
 		rc = PTR_ERR(p);
 		err_print("can't start thread %s - rc %d\n",
-			  data->sic_name, rc);
+			  data.sic_name, rc);
 		goto err;
 	}
 	wake_up_process(p);
@@ -75,10 +81,23 @@ err:
 	return rc;
 }
 
-int mdclient_get_results(struct kres *data)
+int get_results(struct simul_res __user *data)
 {
-	
+	int size;
+	int rc;
+	void *res;
 
+	size = sizeof(*data) * env_count();
+	res = vmalloc(size);
+	if (res == NULL)
+		return -ENOMEM;
+
+	env_results_get(res);
+
+	rc = copy_to_user(data, res, size) == 0 ? -EFAULT : 0;
+	vfree(res);
+
+	return rc;
 }
 
 static int simul_ioctl(struct inode *inode, struct file *file,
@@ -88,18 +107,18 @@ static int simul_ioctl(struct inode *inode, struct file *file,
 
 	switch (cmd) {
 	case SIM_IOW_MDCLIENT:
-		rc = mdclient_create((struct simul_ioctl_cli *)arg);
+		rc = client_create((struct simul_ioctl_cli *)arg);
 		break;
 	case SIM_IOW_RUN:
 		rc = 0;
 		wake_up(&clients_run);
 		break;
 	case SIM_IOW_RESULTS:
-		rc = mdclient_get_results((struct kres *)arg);
+		rc = get_results((struct simul_res *)arg);
 		break;
 	case SIM_IOW_STATS:
 	default:
-		rc = -ENOSUP;
+		rc = -ENOSYS;
 		break;
 	};
 	return rc;
@@ -168,7 +187,7 @@ simul_mod_cleanup(void)
 	sys_handlers_unregister();
 	md_handlers_unregister();
 	
-	md_clients_destroy();
+	env_destroy_all();
 }
 MODULE_LICENSE("GPL v2");
 module_init(simul_mod_init);

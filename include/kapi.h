@@ -33,7 +33,8 @@ enum simul_ops {
 	 */
 	SIM_IOW_RUN,
 	/**
-	 get results after all tests a finished
+	 get results after all tests a finished.
+	 @see struct simul_res
 	 */
 	SIM_IOW_RESULTS,
 	/**
@@ -56,6 +57,15 @@ struct simul_ioctl_cli {
 	char __user	*sic_dst_nid;
 	int		sic_programsz;
 	char __user	*sic_program;
+};
+
+/**
+ enter of array to return from operation SOM_IOW_RESULTS
+ */
+struct simul_res {
+	long sr_cli;
+	long sr_res;
+	long sr_ip;
 };
 
 #endif

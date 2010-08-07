@@ -4,6 +4,7 @@
 #include <linux/types.h>
 
 struct fifo;
+struct simul_env;
 
 /**
  function handler.
@@ -13,7 +14,7 @@ struct fifo;
  \return 0 if function is executed ok, non zero return code has indicate
   fatal error
  */
-typedef int (*vm_func)(void *env, struct fifo *fifo, uint32_t *IP);
+typedef int (*vm_func)(struct simul_env *env, struct fifo *fifo, uint32_t *IP);
 
 
 struct handler_reg {

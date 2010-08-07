@@ -12,7 +12,7 @@
 /**
  VM_SYS_USER
 */
-static int sys_call_user(void *env, struct fifo *f, uint32_t *ip)
+static int sys_call_user(struct simul_env *env, struct fifo *f, uint32_t *ip)
 {
 	long uid;
 
@@ -27,7 +27,7 @@ static int sys_call_user(void *env, struct fifo *f, uint32_t *ip)
 /**
  VM_SYS_GROUP
 */
-static int sys_call_group(void *env, struct fifo *f, uint32_t *ip)
+static int sys_call_group(struct simul_env *env, struct fifo *f, uint32_t *ip)
 {
 	long gid;
 
@@ -39,8 +39,7 @@ static int sys_call_group(void *env, struct fifo *f, uint32_t *ip)
 	return 0;
 }
 
-
-static int sys_call_sleep(void *env, struct fifo *f, uint32_t *ip)
+static int sys_call_sleep(struct simul_env *env, struct fifo *f, uint32_t *ip)
 {
 	long time;
 
@@ -53,13 +52,13 @@ static int sys_call_sleep(void *env, struct fifo *f, uint32_t *ip)
 }
 
 struct _vm_race {
-	long				flags;
-	struct wait_queue_head_t	wait;
+	long			flags;
+	wait_queue_head_t	wait;
 };
 
 struct _vm_race vm_race[VM_MAX_RACES];
 
-static int sys_call_race(void *env, struct fifo *f, uint32_t *ip)
+static int sys_call_race(struct simul_env *env, struct fifo *f, uint32_t *ip)
 {
 	long raceid;
 
@@ -74,7 +73,7 @@ static int sys_call_race(void *env, struct fifo *f, uint32_t *ip)
 		vm_race[raceid].flags = 0;
 		wake_up(&vm_race[raceid].wait);
 	} {
-		wait_event(&vm_race[raceid].wait, vm_race[raceid].flags == 0);
+		wait_event(vm_race[raceid].wait, vm_race[raceid].flags == 0);
 	}
 
 	return 0;
@@ -92,8 +91,8 @@ int sys_handlers_register()
 	int i;
 
 	for (i=0; i < VM_MAX_RACES; i++) {
-		vm_race[i].hit = 0;
-		vm_race[i].wait = __WAIT_QUEUE_HEAD_INITIALIZER(vm_race[i].wait);
+		vm_race[i].flags = 0;
+		init_waitqueue_head(&vm_race[i].wait);
 	}
 
 	return vm_handler_register(ARRAY_SIZE(sys_hld), sys_hld);

@@ -15,7 +15,7 @@ enum {
 	/**
 	 maximal races in system
 	*/
-	VM_MAX_RACES = 200;
+	VM_MAX_RACES = 200,
 };
 
 /**
