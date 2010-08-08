@@ -1,5 +1,6 @@
 #include <linux/list.h>
 #include <linux/slab.h>
+#include <linux/string.h>
 
 #include "env.h"
 #include "kapi.h"
@@ -20,6 +21,9 @@ static void env_destroy(struct simul_env *env)
 	if (env->u.se_md->cli_fini)
 		env->u.se_md->cli_fini(env->se_data);
 
+	if (env->se_name)
+		kfree(env->se_name);
+
 	kfree(env);
 }
 
@@ -34,6 +38,13 @@ int env_create(struct simul_env **env, struct simul_ioctl_cli *data)
 		return -ENOMEM;
 	}
 	memset(ret, 0, sizeof *ret);
+
+	ret->se_name = kstrdup(data->sic_name, GFP_KERNEL);
+	if (ret->se_name == NULL) {
+		err_print("can't alloca memory for env name\n");
+		rc = -ENOMEM;
+		goto err;
+	}
 
 	ret->se_id = data->sic_id;
 
@@ -63,8 +74,10 @@ int env_run(struct simul_env *env)
 	int rc;
 
 	rc = env->u.se_md->cli_prerun(env->se_data);
-	if (rc < 0)
+	if (rc < 0) {
+		err_print("prerun error %d\n", rc);
 		return rc;
+	}
 
 	vm_interpret_run(env->se_vm);
 

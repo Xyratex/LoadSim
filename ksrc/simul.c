@@ -35,9 +35,8 @@ static DECLARE_WAIT_QUEUE_HEAD(clients_run);
 static int client_thread(void *d)
 {
 	struct simul_env *env = d;
-	int rc;
 
-	daemonize(env->se_name);
+	daemonize("%s",env->se_name);
 	atomic_inc(&clients_cnt);
 	complete(&start);
 
@@ -114,6 +113,7 @@ static int simul_ioctl(struct inode *inode, struct file *file,
 		break;
 	case SIM_IOW_RUN:
 		rc = 0;
+		state = SIM_RUN;
 		wake_up(&clients_run);
 		break;
 	case SIM_IOW_RESULTS:
