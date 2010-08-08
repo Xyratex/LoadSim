@@ -29,7 +29,7 @@ int vm_interpret_init(struct stack_vm **vm, int stack_size,
 		goto err1;
 	}
 
-	program = vmalloc(size);
+	program = kmalloc(size, GFP_KERNEL);
 	if (program == NULL) {
 		err_print("can't allocate memory for program - %d\n", size);
 		rc = -ENOMEM;
@@ -52,7 +52,7 @@ int vm_interpret_init(struct stack_vm **vm, int stack_size,
 	*vm = v;
 	return 0;
 err3:
-	vfree(program);
+	kfree(program);
 err2:
 	fifo_destroy(stack);
 err1:
@@ -63,7 +63,7 @@ err1:
 
 void vm_interpret_fini(struct stack_vm *vm)
 {
-	vfree(vm->sv_program);
+	kfree(vm->sv_program);
 	fifo_destroy(vm->sv_stack);
 	kfree(vm);
 }

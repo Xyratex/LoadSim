@@ -30,7 +30,7 @@ int env_create(struct simul_env **env, struct simul_ioctl_cli *data)
 
 	ret = kmalloc(sizeof *ret, GFP_KERNEL);
 	if (ret == NULL) {
-		err_print("can't alloc memory for md_env\n");
+		err_print("can't alloc memory for env\n");
 		return -ENOMEM;
 	}
 	memset(ret, 0, sizeof *ret);
@@ -58,6 +58,18 @@ err:
 	return rc;
 }
 
+int env_run(struct simul_env *env)
+{
+	int rc;
+
+	rc = env->u.se_md->cli_prerun(env->se_data);
+	if (rc < 0)
+		return rc;
+
+	vm_interpret_run(env->se_vm);
+
+	return 0;
+}
 
 void env_destroy_all(void)
 {

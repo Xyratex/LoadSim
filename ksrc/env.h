@@ -45,6 +45,8 @@ struct simul_env {
  */
 int env_create(struct simul_env **env, struct simul_ioctl_cli *data);
 
+int env_run(struct simul_env *env);
+
 /**
  destroy all clients in global list
  */

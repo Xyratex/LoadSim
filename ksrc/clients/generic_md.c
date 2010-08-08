@@ -55,7 +55,6 @@ static int generic_cli_create(struct md_private **cli, char *fsname, char *dstni
 	struct md_private *ret = NULL;
 	char *fs = NULL;
 	char *opt = NULL;
-	struct fs_struct old_fs;
 	int rc;
 
 	rc = snprintf(NULL, 0, LUSTRE_FS, dstnid, fsname) + 1;
@@ -91,15 +90,36 @@ static int generic_cli_create(struct md_private **cli, char *fsname, char *dstni
 		goto error;
 	}
 
+
+	*cli = ret;
+	kfree(fs);
+
+	return 0;
+error:
+	if (ret) {
+		if (ret->lp_open)
+			kfree(ret->lp_open);
+		kfree(ret);
+	}
+	if (opt)
+		kfree(opt);
+	kfree(fs);
+	return rc;
+}
+
+static int generic_cli_prerun(struct md_private *cli)
+{
+	struct fs_struct old_fs;
+
 	/* make lustre mount as pwd, root, altroot */
 	write_lock(&current->fs->lock);
 	old_fs = *current->fs;
-	current->fs->pwdmnt = mntget(ret->lp_mnt);
-	current->fs->pwd = dget(ret->lp_mnt->mnt_sb->s_root);
-	current->fs->rootmnt = mntget(ret->lp_mnt);
-	current->fs->root = dget(ret->lp_mnt->mnt_sb->s_root);
-	current->fs->altrootmnt = mntget(ret->lp_mnt);
-	current->fs->altroot = dget(ret->lp_mnt->mnt_sb->s_root);
+	current->fs->pwdmnt = mntget(cli->lp_mnt);
+	current->fs->pwd = dget(cli->lp_mnt->mnt_sb->s_root);
+	current->fs->rootmnt = mntget(cli->lp_mnt);
+	current->fs->root = dget(cli->lp_mnt->mnt_sb->s_root);
+	current->fs->altrootmnt = mntget(cli->lp_mnt);
+	current->fs->altroot = dget(cli->lp_mnt->mnt_sb->s_root);
 	write_unlock(&current->fs->lock);
 
 	DPRINT("root %p/%p\n", current->fs->pwd, current->fs->pwd->d_inode);
@@ -118,20 +138,7 @@ static int generic_cli_create(struct md_private **cli, char *fsname, char *dstni
 	if (old_fs.altrootmnt)
 		mntput(old_fs.altrootmnt);
 
-	*cli = ret;
-	kfree(fs);
-
 	return 0;
-error:
-	if (ret) {
-		if (ret->lp_open)
-			kfree(ret->lp_open);
-		kfree(ret);
-	}
-	if (opt)
-		kfree(opt);
-	kfree(fs);
-	return rc;
 }
 
 static int generic_cli_cd(struct md_private *cli, const char *pwd)
@@ -511,6 +518,7 @@ exit1:
 
 struct md_client generic_cli = {
 	.cli_init 	= generic_cli_create,
+	.cli_prerun	= generic_cli_prerun,
 	.cli_fini	= generic_cli_destroy,
 
 	.cd		= generic_cli_cd,

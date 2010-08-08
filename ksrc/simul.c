@@ -32,25 +32,22 @@ enum sim_state {
 static enum sim_state state = SIM_SETUP;
 static DECLARE_WAIT_QUEUE_HEAD(clients_run);
 
-static int client_thread(void *data)
+static int client_thread(void *d)
 {
-	struct simul_env *env;
+	struct simul_env *env = d;
 	int rc;
 
-	rc = env_create(&env, data);
+	daemonize(env->se_name);
+	atomic_inc(&clients_cnt);
 	complete(&start);
-	DPRINT("cli create %d - %p\n", rc, env);
-	if (rc < 0)
-		return rc;
 
 	wait_event(clients_run, state != SIM_SETUP);
 	if (state == SIM_TERM)
 		return 0;
 
-	atomic_inc(&clients_cnt);
 	/* wait until run event */
 	DPRINT("thread run\n");
-	vm_interpret_run(env->se_vm);
+	env_run(env);
 
 	atomic_dec(&clients_cnt);
 	wake_up(&clients_wait);
@@ -61,21 +58,26 @@ static int client_thread(void *data)
 static int client_create(struct simul_ioctl_cli __user *d)
 {
 	int rc = 0;
-	struct task_struct *p;
+	pid_t p;
+	struct simul_env *env;
 	struct simul_ioctl_cli data;
 
-	if (copy_from_user(&data, d, sizeof data))
+	if (copy_from_user(&data, d, sizeof *d))
 		return -EFAULT;
 
+	rc = env_create(&env, &data);
+	DPRINT("cli create %d - %p\n", rc, env);
+	if (rc < 0)
+		return rc;
+
 	init_completion(&start);
-	p = kthread_create(client_thread, &data, data.sic_name);
-	if (IS_ERR(p)) {
-		rc = PTR_ERR(p);
+	p = kernel_thread(client_thread, env, 0);
+	if (p < 0) {
+		rc = p;
 		err_print("can't start thread %s - rc %d\n",
 			  data.sic_name, rc);
 		goto err;
 	}
-	wake_up_process(p);
 	wait_for_completion(&start);
 err:
 	return rc;
@@ -105,6 +107,7 @@ static int simul_ioctl(struct inode *inode, struct file *file,
 {
 	int rc;
 
+	DPRINT("got cmd %d\n", cmd);
 	switch (cmd) {
 	case SIM_IOW_MDCLIENT:
 		rc = client_create((struct simul_ioctl_cli *)arg);
