@@ -10,7 +10,7 @@
 #include "vm_core.h"
 
 int vm_interpret_init(struct stack_vm **vm, int stack_size,
-		      char __user *prg, int size, void *env)
+		      char __user *prg, int size, struct simul_env *env)
 {
 	struct fifo *stack;
 	char *program;
