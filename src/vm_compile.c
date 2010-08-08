@@ -174,7 +174,7 @@ int vm_program_init(struct vm_program **vprg, char *name)
 	list_add(&ret->vmp_link, &vm_programs);
 
 	*vprg = ret;
-	DPRINT("program '%s' created\n", name);
+	DPRINT("program '%s' created - %p\n", name, ret->vmp_data);
 	return 0;
 }
 

@@ -34,6 +34,7 @@ int simul_api_cli_create(char *cliname, long cliid, struct server_link *sl,
 	_data.sic_dst_nid = sl->sl_nid;
 	_data.sic_program = data;
 	_data.sic_programsz = size;
+	DPRINT("program %p\n", data);
 
 	return ioctl(api_fd, SIM_IOW_MDCLIENT, &_data);
 }
