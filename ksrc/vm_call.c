@@ -4,6 +4,7 @@
 #include <linux/slab.h>
 
 #include "vm_api.h"
+#include "kdebug.h"
 
 static LIST_HEAD(vm_calls);
 
@@ -72,6 +73,7 @@ int vm_call(struct stack_vm *vm, void *args)
 
 	fn = *(long *)args;
 	f = vm_handler_find(fn);
+	DPRINT("callf %ld - %p\n", fn, f);
 	if (f == NULL)
 		return -ENOSYS;
 

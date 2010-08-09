@@ -15,10 +15,13 @@ static LIST_HEAD(clients);
 
 static void env_destroy(struct simul_env *env)
 {
+	if (env == NULL)
+		return;
+
 	if (env->se_vm != NULL)
 		vm_interpret_fini(env->se_vm);
 
-	if (env->u.se_md->cli_fini)
+	if (env->u.se_md && env->u.se_md->cli_fini)
 		env->u.se_md->cli_fini(env->se_data);
 
 	if (env->se_name)

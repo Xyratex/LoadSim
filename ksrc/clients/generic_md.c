@@ -36,11 +36,15 @@ static int generic_cli_destroy(struct md_private *lp)
 	if (lp == NULL)
 		return 0;
 
-	if (lp->lp_open)
+	if (lp->lp_open) {
+		/* XXX close all files */
 		kfree(lp->lp_open);
+	}
 
-	if (lp->lp_mnt)
+	if (lp->lp_mnt) {
+		DPRINT("mntput \n");
 		mntput(lp->lp_mnt);
+	}
 
 	kfree(lp);
 
@@ -89,18 +93,12 @@ static int generic_cli_create(struct md_private **cli, char *fsname, char *dstni
 		rc = PTR_ERR(ret->lp_mnt);
 		goto error;
 	}
-
-
 	*cli = ret;
-	kfree(fs);
-
-	return 0;
+	rc = 0;
+	ret = NULL;
 error:
-	if (ret) {
-		if (ret->lp_open)
-			kfree(ret->lp_open);
-		kfree(ret);
-	}
+	if (ret)
+		generic_cli_destroy(ret);
 	if (opt)
 		kfree(opt);
 	kfree(fs);
@@ -278,14 +276,15 @@ static int generic_cli_stat(struct md_private *cli, const char *name)
 {
 	int retval;
 	struct nameidata nd;
-	struct kstatfs tmp;
+	struct kstat tmp;
 
-	retval = path_lookup(name, LOOKUP_DIRECTORY, &nd);
+	retval = path_lookup(name, 0, &nd);
 	if (retval)
-		return retval;
-	retval = vfs_statfs(nd.dentry, &tmp);
+		goto out;
+	retval = vfs_getattr(nd.mnt, nd.dentry, &tmp);
 	path_release(&nd);
-
+out:
+	DPRINT("stat rc %d\n", retval);
 	return retval;
 }
 
@@ -294,7 +293,7 @@ static int generic_cli_setattr(const char *name, struct iattr *newattrs)
 	int retval;
 	struct nameidata nd;
 
-	retval = path_lookup(name, LOOKUP_DIRECTORY, &nd);
+	retval = path_lookup(name, 0, &nd);
 	if (retval)
 		return retval;
 
@@ -374,7 +373,7 @@ static int generic_cli_lookup(struct md_private *cli, const char *name)
 	int retval;
 	struct nameidata nd;
 
-	retval = path_lookup(name, LOOKUP_DIRECTORY, &nd);
+	retval = path_lookup(name, 0, &nd);
 	if (retval)
 		return retval;
 	path_release(&nd);
@@ -390,7 +389,7 @@ static int generic_cli_softlink(struct md_private *cli, const char *name,
 	struct dentry *old;
 	struct dentry *new;
 
-	retval = path_lookup(name, LOOKUP_PARENT, &nd);
+	retval = path_lookup(name, LOOKUP_DIRECTORY | LOOKUP_PARENT, &nd);
 	if (retval)
 		return retval;
 
@@ -420,7 +419,7 @@ static int generic_cli_hardlink(struct md_private *cli, const char *name,
 	struct dentry *old;
 	struct dentry *new;
 
-	retval = path_lookup(name, LOOKUP_PARENT, &nd);
+	retval = path_lookup(name, LOOKUP_DIRECTORY | LOOKUP_PARENT, &nd);
 	if (retval)
 		return retval;
 
@@ -463,8 +462,6 @@ static int generic_cli_readlink(struct md_private *cli, const char *linkname)
 
 	path_release(&nd);
 	return retval;
-
-	return 0;
 }
 
 static int generic_cli_rename(struct md_private *cli, const char *oldname,

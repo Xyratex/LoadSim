@@ -168,7 +168,7 @@ enum vm_md_calls {
 	/**
 	 change size of object
 	 */
-	VM_MD_CALL_TRUNCATE	= 100,
+	VM_MD_CALL_TRUNCATE	= 110,
 	/**
 	 create a soft link between metadata objects
 	 */
