@@ -153,9 +153,9 @@ static int md_call_chmod(struct simul_env *env, struct fifo *f, uint32_t *ip)
 	long mode;
 	struct md_client *md = env->u.se_md;
 
-	if (fifo_pop(f, (long *)&name) < 0)
-		return -ENODATA;
 	if (fifo_pop(f, &mode) < 0)
+		return -ENODATA;
+	if (fifo_pop(f, (long *)&name) < 0)
 		return -ENODATA;
 
 	ret = md->chmod(env->se_data, name, mode);
@@ -174,11 +174,11 @@ static int md_call_chown(struct simul_env *env, struct fifo *f, uint32_t *ip)
 	long gid;
 	struct md_client *md = env->u.se_md;
 
-	if (fifo_pop(f, (long *)&name) < 0)
+	if (fifo_pop(f, &gid) < 0)
 		return -ENODATA;
 	if (fifo_pop(f, &uid) < 0)
 		return -ENODATA;
-	if (fifo_pop(f, &gid) < 0)
+	if (fifo_pop(f, (long *)&name) < 0)
 		return -ENODATA;
 
 	ret = md->chown(env->se_data, name, uid, gid);
@@ -196,9 +196,9 @@ static int md_call_chtime(struct simul_env *env, struct fifo *f, uint32_t *ip)
 	long time;
 	struct md_client *md = env->u.se_md;
 
-	if (fifo_pop(f, (long *)&name) < 0)
-		return -ENODATA;
 	if (fifo_pop(f, &time) < 0)
+		return -ENODATA;
+	if (fifo_pop(f, (long *)&name) < 0)
 		return -ENODATA;
 
 	ret = md->chtime(env->se_data, name, time);
@@ -216,9 +216,9 @@ static int md_call_truncate(struct simul_env *env, struct fifo *f, uint32_t *ip)
 	long size;
 	struct md_client *md = env->u.se_md;
 
-	if (fifo_pop(f, (long *)&name) < 0)
-		return -ENODATA;
 	if (fifo_pop(f, &size) < 0)
+		return -ENODATA;
+	if (fifo_pop(f, (long *)&name) < 0)
 		return -ENODATA;
 
 	ret = md->truncate(env->se_data, name, size);
@@ -236,9 +236,9 @@ static int md_call_softlink(struct simul_env *env, struct fifo *f, uint32_t *ip)
 	char *new;
 	struct md_client *md = env->u.se_md;
 
-	if (fifo_pop(f, (long *)&name) < 0)
-		return -ENODATA;
 	if (fifo_pop(f, (long *)&new) < 0)
+		return -ENODATA;
+	if (fifo_pop(f, (long *)&name) < 0)
 		return -ENODATA;
 
 	ret = md->softlink(env->se_data, name, new);
@@ -255,9 +255,9 @@ static int md_call_hardlink(struct simul_env *env, struct fifo *f, uint32_t *ip)
 	char *new;
 	struct md_client *md = env->u.se_md;
 
-	if (fifo_pop(f, (long *)&name) < 0)
-		return -ENODATA;
 	if (fifo_pop(f, (long *)&new) < 0)
+		return -ENODATA;
+	if (fifo_pop(f, (long *)&name) < 0)
 		return -ENODATA;
 
 	ret = md->hardlink(env->se_data, name, new);

@@ -251,7 +251,7 @@ int encode_hardlink(struct vm_program *vprg, char *old, char *new)
 	if (ret)
 		return ret;
 
-	arg.cd_call = VM_MD_CALL_SOFTLINK;
+	arg.cd_call = VM_MD_CALL_HARDLINK;
 	return vm_encode(vprg, VM_CMD_CALL, arg);
 }
 

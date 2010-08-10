@@ -387,28 +387,23 @@ static int generic_cli_softlink(struct md_private *cli, const char *name,
 {
 	int retval;
 	struct nameidata nd;
-	struct dentry *old;
 	struct dentry *new;
 
-	retval = path_lookup(name, LOOKUP_DIRECTORY | LOOKUP_PARENT, &nd);
+	DPRINT("sl %s/%s\n", linkname, name);
+	retval = path_lookup(linkname, LOOKUP_PARENT, &nd);
 	if (retval)
 		return retval;
-
-	old = lookup_one_len(nd.last.name, nd.dentry, strlen(nd.last.name));
-	if (IS_ERR(old)) {
-		retval = PTR_ERR(old);
-		goto exit1;
-	}
 
 	new = lookup_create(&nd, 0);
 	retval = PTR_ERR(new);
 	if (!IS_ERR(new)) {
-		retval = vfs_link(nd.dentry, old->d_inode, new);
+		retval = vfs_symlink(nd.dentry->d_inode, new, name, S_IALLUGO);
 		dput(new);
 	}
 	mutex_unlock(&nd.dentry->d_inode->i_mutex); // lookup_create
-exit1:
 	path_release(&nd);
+
+	DPRINT("softlink return %d\n", retval);
 	return retval;
 }
 
@@ -433,11 +428,12 @@ static int generic_cli_hardlink(struct md_private *cli, const char *name,
 	new = lookup_create(&nd, 0);
 	retval = PTR_ERR(new);
 	if (!IS_ERR(new)) {
-		retval = vfs_link(nd.dentry, old->d_inode, new);
+		retval = vfs_link(old, nd.dentry->d_inode, new);
 		dput(new);
 	}
 	mutex_unlock(&nd.dentry->d_inode->i_mutex); // lookup_create
 exit1:
+	DPRINT("hardlink return %d\n", retval);
 	path_release(&nd);
 	return retval;
 }
@@ -446,22 +442,13 @@ static int generic_cli_readlink(struct md_private *cli, const char *linkname)
 {
 	int retval;
 	struct nameidata nd;
-	struct inode *inode;
-	char buf[20];
 
-	retval = path_lookup(linkname, 0, &nd);
+	retval = path_lookup(linkname, LOOKUP_FOLLOW, &nd);
 	if (retval)
 		return retval;
-
-	inode = nd.dentry->d_inode;
-
-	retval = -EINVAL;
-	if (inode && inode->i_op && inode->i_op->readlink) {
-		touch_atime(nd.mnt, nd.dentry);
-		retval = inode->i_op->readlink(nd.dentry, buf, sizeof buf);
-	}
-
 	path_release(&nd);
+
+	DPRINT("readlink %d\n", retval);
 	return retval;
 }
 
