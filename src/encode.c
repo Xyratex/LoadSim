@@ -268,6 +268,27 @@ int encode_readlink(struct vm_program *vprg,char *name)
 	arg.cd_call = VM_MD_CALL_READLINK;
 	return vm_encode(vprg, VM_CMD_CALL, arg);
 }
+
+int encode_rename(struct vm_program *vprg, char *oldname, char *newname)
+{
+	int ret;
+	union cmd_arg arg;
+
+	arg.cd_string = newname;
+	ret = vm_encode(vprg, VM_CMD_PUSHS, arg);
+	if (ret)
+		return ret;
+
+	arg.cd_string = oldname;
+	ret = vm_encode(vprg, VM_CMD_PUSHS, arg);
+	if (ret)
+		return ret;
+
+	arg.cd_call = VM_MD_CALL_RENAME;
+	return vm_encode(vprg, VM_CMD_CALL, arg);
+
+}
+
 /** **/
 int encode_user(struct vm_program *vprg, int uid)
 {

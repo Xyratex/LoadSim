@@ -80,11 +80,12 @@ STAT		[s|S][t|T][a|A][t|T]
 READDIR		[r|R][e|E][a|A][d|D][d|D][i|I][r|R]
 CHMOD		[c][h][m][o][d]
 CHOWN		[c][h][o][w][n]
-CHTIME		[c][h][t][t][i][m][e]
+CHTIME		[c][h][t][i][m][e]
 TRUNCATE	[t][r][u][n][c][a][t][e]
 SOFTLINK	[s|S][o|O][f|F][t|T][l|L][i|I][n|N][k|K]
 HARDLINK	[h|H][a|A][r|R][d|D][l|L][i|I][n|N][k|K]
 READLINK	[r|R][e|E][a|A][d|D][l|L][i|I][n|N][k|K]
+RENAME		[r|R][e|E][n|N][a|A][m|M][e|E]
 
 UID		[u|U][i|I][d|D]
 GID		[g|G][i|I][d|D]
@@ -137,6 +138,7 @@ ID		{alpha}({alpha}|{digit})+
 {SOFTLINK}	return TOK_SOFTLINK_CMD;
 {HARDLINK}	return TOK_HARDLINK_CMD;
 {READLINK}	return TOK_READLINK_CMD;
+{RENAME}	return TOK_RENAME;
 
 {SLEEP}		return TOK_SLEEP_CMD;
 {WAITRACE}	return TOK_WAITRACE_CMD;
@@ -203,6 +205,7 @@ ID		{alpha}({alpha}|{digit})+
 		}
 
 \|		{ return yytext[0]; }
+":"		{ return yytext[0]; }
 {ID}		{ yylval.strval = strdup(yytext); return TOK_ID; }
 
 %%

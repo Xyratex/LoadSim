@@ -26,7 +26,7 @@ int encode_truncate(struct vm_program *prg, char *name, int size);
 int encode_softlink(struct vm_program *prg, char *old, char *new);
 int encode_hardlink(struct vm_program *prg, char *old, char *new);
 int encode_readlink(struct vm_program *prg, char *name);
-
+int encode_rename(struct vm_program *prg, char *oldname, char *newname);
 
 /* VM_SYS */
 int encode_user(struct vm_program *prg, int uid);

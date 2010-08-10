@@ -28,6 +28,7 @@ int yywrap()
 %token TOK_STAT_CMD TOK_CHMOD_CMD TOK_CHOWN_CMD TOK_CHTIME_CMD TOK_TRUNCATE_CMD
 %token TOK_MKDIR_CMD TOK_READDIR_CMD
 %token TOK_SOFTLINK_CMD TOK_HARDLINK_CMD TOK_READLINK_CMD
+%token TOK_RENAME
 
 %token TOK_UID_CMD TOK_GID_CMD
 %token TOK_WAITRACE_CMD TOK_SLEEP_CMD
@@ -301,6 +302,7 @@ md_cmd:
 	| mksln_cmd
 	| mkhln_cmd
 	| readln_cmd
+	| rename_cmd
 	;
 
 /**
@@ -572,6 +574,19 @@ readln_cmd:
 			YYABORT;
 	}
 	;
+
+rename_cmd:
+	TOK_RENAME QSTRING QSTRING
+	{
+		int ret;
+
+		ret = encode_rename(procedure_current(), $2, $3);
+		free($2);
+		free($3);
+		if (ret)
+			YYABORT;
+
+	}
 
 /**********************/
 expected:
