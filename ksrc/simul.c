@@ -36,7 +36,8 @@ static int client_thread(void *d)
 {
 	struct simul_env *env = d;
 
-	daemonize("%s",env->se_name);
+	snprintf(current->comm, sizeof(current->comm), "%s", env->se_name);
+
 	atomic_inc(&clients_cnt);
 	complete(&start);
 
@@ -134,6 +135,8 @@ int simul_open(struct inode *inode, struct file *file)
 
 int simul_release(struct inode *inode, struct file *file)
 {
+	env_destroy_all();
+
 	module_put(THIS_MODULE);
 	return 0;
 }

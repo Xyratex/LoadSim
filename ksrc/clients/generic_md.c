@@ -183,6 +183,7 @@ static int generic_cli_mkdir(struct md_private *cli, const char *pwd, const int 
 	dir = lookup_create(&nd, 0); /* hold i_mutex */
 	if (!IS_ERR(dir)) {
 		retval = vfs_mkdir(nd.dentry->d_inode, dir, mode);
+		dput(dir);
 	}
 	mutex_unlock(&nd.dentry->d_inode->i_mutex);
 	path_release(&nd);
