@@ -62,6 +62,8 @@ struct md_client {
 	long			mdc_op;
 };
 
+extern struct list_head clients;
+
 /**
  create new client
  */

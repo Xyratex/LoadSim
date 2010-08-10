@@ -20,7 +20,7 @@ int server_create(char *name, char *fs, char *nid)
 	return 0;
 }
 
-static LIST_HEAD(clients);
+LIST_HEAD(clients);
 static long cliidx;
 
 int client_create(char *name, char *program)
