@@ -43,10 +43,13 @@ AC_ARG_ENABLE([debug],
         [AC_HELP_STRING([--enable-debug], [enable debug information and logs])], 
         [enable_debug=yes]
 )
+KCC=""
 if test xenable_debug == xyes; then
+	KCC="$KCC -g"
 	AC_DEFINE(DEBUG)
 fi
 AC_SUBST(DEBUG)
+AC_SUBST(KCC)
 
 
 SIM_KERNEL
