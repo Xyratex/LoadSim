@@ -66,4 +66,5 @@ Makefile
 src/Makefile
 ksrc/Makefile
 include/Makefile
+tests/Makefile
 ])
