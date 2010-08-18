@@ -54,7 +54,7 @@ static int generic_cli_destroy(struct md_private *lp)
 #define LUSTRE_FS "%s:/%s"
 #define LUSTRE_OPT "device=%s"
 
-static int generic_cli_create(struct md_private **cli, char *fsname, char *dstnid)
+static int generic_cli_create(struct md_private **cli, const char *fsname, const char *dstnid)
 {
 	struct md_private *ret = NULL;
 	char *fs = NULL;
@@ -77,6 +77,7 @@ static int generic_cli_create(struct md_private **cli, char *fsname, char *dstni
 		rc = -ENOMEM;
 		goto error;
 	}
+	memset(ret, 0, sizeof *ret);
 	
 	ret->lp_open = kmalloc(sizeof(struct file *) * MAX_OPEN_HANDLES, GFP_KERNEL);
 	if (ret->lp_open == NULL) {
@@ -91,6 +92,7 @@ static int generic_cli_create(struct md_private **cli, char *fsname, char *dstni
 	ret->lp_mnt = mount_lustre(fs, opt);
 	if (IS_ERR(ret->lp_mnt)) {
 		rc = PTR_ERR(ret->lp_mnt);
+		ret->lp_mnt = NULL;
 		goto error;
 	}
 	*cli = ret;
@@ -432,6 +434,7 @@ static int generic_cli_hardlink(struct md_private *cli, const char *name,
 		dput(new);
 	}
 	mutex_unlock(&nd.dentry->d_inode->i_mutex); // lookup_create
+	dput(old);
 exit1:
 	DPRINT("hardlink return %d\n", retval);
 	path_release(&nd);
