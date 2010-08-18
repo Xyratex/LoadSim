@@ -7,15 +7,20 @@ else
     	KDIR      := @LINUX_OBJ@
     	PWD       := $(shell cd @srcdir@; pwd)
     	ROOT	  := $(shell cd @top_srcdir@; pwd)
-
 all:
 	$(MAKE) -C $(KDIR) SUBDIRS=$(PWD) EXTRA_CFLAGS="@KCC@ -I $(ROOT)/include -I $(PWD)" modules 
+
+install modules_install:
+	$(MAKE) INSTALL_MOD_DIR=kernel/fs/lustre/sim -C $(KDIR) SUBDIRS=$(PWD) modules_install                               
+uninstall:
+	rm -fr @KMOD@/kernel/fs/lustre/sim
 endif
 
-clean:
+clean distclean:
 	$(MAKE) -C $(KDIR) SUBDIRS=$(PWD) clean;
 	rm -f Module.markers Module.symvers
 
 distdir:
-	cp $(PWD)/Makefile.in $(PWD)/*.[ch] $(ROOT)/loadsim-0.1/ksrc;
-	mkdir $(ROOT)/loadsim-0.1/ksrc/clients && cp $(PWD)/clients/*.[ch] $(ROOT)/loadsim-0.1/ksrc/clients
+	cp $(PWD)/Makefile.in $(PWD)/*.[ch] @top_builddir@/@PACKAGE@-@VERSION@/ksrc;
+	mkdir @top_builddir@/@PACKAGE@-@VERSION@/ksrc/clients;
+	cp $(PWD)/clients/*.[ch] @top_builddir@/@PACKAGE@-@VERSION@/ksrc/clients
