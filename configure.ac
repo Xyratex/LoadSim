@@ -59,4 +59,5 @@ AC_OUTPUT([
 Makefile
 src/Makefile
 ksrc/Makefile
+include/Makefile
 ])

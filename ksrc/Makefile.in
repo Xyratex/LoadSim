@@ -1,19 +1,21 @@
 ifneq ($(KERNELRELEASE),)
-    obj-m	:= sim.o
-    sim-objs	:= simul.o stats.o env.o
-    sim-objs	+= md_cli.o clients/generic_md.o
-    sim-objs	+= fifo.o vm_main.o vm_core.o vm_call.o vm_sys.o
+    	obj-m	  := sim.o
+    	sim-objs  := simul.o env.o
+    	sim-objs  += md_cli.o clients/generic_md.o
+    	sim-objs  += fifo.o vm_main.o vm_core.o vm_call.o vm_sys.o
 else
-    KDIR        := @LINUX_OBJ@
-    PWD         := $(shell cd @srcdir@; pwd)
-    ROOT	:= $(shell cd @top_srcdir@; pwd)
+    	KDIR      := @LINUX_OBJ@
+    	PWD       := $(shell cd @srcdir@; pwd)
+    	ROOT	  := $(shell cd @top_srcdir@; pwd)
 
 all:
-	$(MAKE) -C $(KDIR) SUBDIRS=$(PWD) EXTRA_CFLAGS="@KCC@ -I $(ROOT)/include/ -I $(PWD)" modules 
+	$(MAKE) -C $(KDIR) SUBDIRS=$(PWD) EXTRA_CFLAGS="@KCC@ -I $(ROOT)/include -I $(PWD)" modules 
 endif
 
 clean:
-	$(MAKE) -C $(KDIR) SUBDIRS=$(PWD) clean
+	$(MAKE) -C $(KDIR) SUBDIRS=$(PWD) clean;
 	rm -f Module.markers Module.symvers
 
-
+distdir:
+	cp $(PWD)/Makefile.in $(PWD)/*.[ch] $(ROOT)/loadsim-0.1/ksrc;
+	mkdir $(ROOT)/loadsim-0.1/ksrc/clients && cp $(PWD)/clients/*.[ch] $(ROOT)/loadsim-0.1/ksrc/clients
