@@ -57,7 +57,7 @@ int simul_api_wait_finished()
 	_poll.events = POLLIN;
 
 	while (1) {
-		rc = poll(&_poll, 1, 1);
+		rc = poll(&_poll, 1, -1);
 		DPRINT("rc %d - %x\n", rc, _poll.revents);
 		if (rc < 0) {
 			rc = -errno;
