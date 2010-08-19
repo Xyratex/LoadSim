@@ -462,6 +462,38 @@ int encode_expected(struct vm_program *vprg, int exp)
 	return ret;
 }
 
+/**
+ create tmp_name; mkdir ; cd;
+ */
+int encode_make_workdir(struct vm_program *prg)
+{
+	char name[256] = {0};
+	int rc;
+
+	strcpy(name, "workd-XXXXXXX");
+	rc = mkstemp(name);
+	if (rc < 0)
+		return -EINVAL;
+
+	rc = encode_mkdir(prg, name, 0777);
+	if (rc < 0)
+		return rc;
+
+	rc = encode_expected(prg, VM_RET_OK);
+	if (rc < 0)
+		return rc;
+
+	rc = encode_cd(prg, name);
+	if (rc < 0)
+		return rc;
+
+	rc = encode_expected(prg, VM_RET_OK);
+	if (rc < 0)
+		return rc;
+
+	return 0;
+}
+
 
 /******************/
 static struct vm_program *vprg = NULL;

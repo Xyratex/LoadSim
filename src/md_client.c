@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <errno.h>
 
+#include "debug.h"
 #include "list.h"
 #include "md_client.h"
 #include "kernel.h"
@@ -87,6 +88,59 @@ int client_create(char *name, char *program)
 
 }
 
+/* [start'-'end] */
+int get_range(char *prefix, int *start, int *end)
+{
+	char *r_start;
+	char *r_end; 
+	char *err;
+	long st;
+	long en;
+
+	r_start = strchr(prefix, '[');
+	if (r_start == NULL) {
+		*start = 0;
+		*end = 0;
+		return 0;
+	}
+	*r_start = '\0'; r_start++;
+	st = strtol(r_start, &r_end, 0);
+	if (*r_end != '-')
+		return -EINVAL;
+	r_end ++;
+
+	en = strtol(r_end, &err, 0);
+	if (*err != ']')
+		return -EINVAL;
+
+	*start = st;
+	*end = en;
+
+	return 0;
+}
+
+int clients_create(char *prefix, char *prg)
+{
+	char name[256];
+	int start;
+	int end;
+	int i;
+	int rc;
+
+	if (get_range(prefix, &start, &end) < 0)
+		return -EINVAL;
+
+	for (i = start; i <= end; i++) {
+		snprintf(name, sizeof(name), "%s_%d", prefix, i);
+		rc = client_create(&name[0], prg);
+		if (rc < 0) {
+			err_print("can't create client %s - rc: %d\n", name, rc);
+			return rc;
+		}
+	}
+
+	return 0;
+}
 
 static struct md_client *clients_find_by_id(long id)
 {

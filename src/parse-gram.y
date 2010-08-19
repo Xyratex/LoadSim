@@ -32,6 +32,7 @@ int yywrap()
 
 %token TOK_UID_CMD TOK_GID_CMD
 %token TOK_WAITRACE_CMD TOK_SLEEP_CMD
+%token TOK_MKWD
 
 %token TOK_EXPECTED
 
@@ -89,11 +90,11 @@ server_set:
  'test-name' is name of some group of operations.
  */
 client_set:
-	TOK_CLIENT TOK_ID TOK_ID
+	TOK_CLIENT QSTRING TOK_ID
 	{
 		int ret; 
 		
-		ret = client_create($2, $3);
+		ret = clients_create($2, $3);
 		free($2);
 		free($3);
 
@@ -203,6 +204,7 @@ misc_ops:
 	| sleep
 	| chuid
 	| chgid
+	| mkwd
 	;
 
 /**
@@ -260,6 +262,16 @@ chgid:
 			YYABORT;
 	}
 	;
+
+mkwd:
+	TOK_MKWD
+	{
+		int ret;
+
+		ret = encode_make_workdir(procedure_current());
+		if (ret)
+			YYABORT;
+	}
 
 /**
  format of metadata operating
