@@ -1,8 +1,17 @@
 AC_PREREQ([2.59])
 AC_INIT([loadsim], [0.1], [lustre@clusterstor.com])
 AC_CONFIG_HEADER([loadsim_c.h])
-# AC_CONFIG_MACRO_DIR([m4])
 
+AH_TEMPLATE([PACKAGE], [Package name.])
+AH_TEMPLATE([VERSION], [Version of the package.]) 
+AH_TEMPLATE([LINUX], [Path to linux sources])
+AH_TEMPLATE([LINUX_OBJ], [Path to linux sources])
+AH_TEMPLATE([DEBUG], [Enable debug])
+
+PACKAGE=loadsim
+VERSION=0.1                                                                 
+                                                                                                                      
+AM_INIT_AUTOMAKE([$PACKAGE], [$VERSION]) 
 
 AC_DEFUN([SIM_KERNEL], [
         AC_MSG_CHECKING([for linux sources dir])
@@ -31,12 +40,6 @@ AC_DEFUN([SIM_USERLAND], [
 	AC_PROG_YACC
 ])
 
-AM_INIT_AUTOMAKE
-
-AH_TEMPLATE([LINUX], [path to linux sources])
-AH_TEMPLATE([LINUX_OBJ], [path to linux sources])
-AH_TEMPLATE([DEBUG], [enable debug])
-
 AC_PROG_CC
 
 AC_ARG_ENABLE([debug],
@@ -53,10 +56,15 @@ AC_SUBST(KCC)
 
 
 SIM_KERNEL
+KMOD="/lib/modules/`uname -r`"                                                                           
+AC_SUBST([KMOD]) 
+
 SIM_USERLAND
 
 AC_OUTPUT([
 Makefile
 src/Makefile
 ksrc/Makefile
+include/Makefile
+tests/Makefile
 ])

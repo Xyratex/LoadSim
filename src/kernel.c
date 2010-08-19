@@ -92,3 +92,4 @@ int simul_api_close()
 	close(api_fd);
 	api_fd = -1;
 }
+
