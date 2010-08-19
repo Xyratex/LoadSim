@@ -53,7 +53,7 @@ EXPECT_STAT	{OK}|{FAIL}
 
 LO_NID		[l|L][o|O]
 TCP_NID		[t|T][c|C][p|P]
-IB_NID		[i|I][b|B]
+IB_NID		[o|O][2][i|I][b|B]
 LNDS		{TCP_NID}|{LO_NID}|{IB_NID}
 
 PROCEDURE	[p|P][r|R][o|O][c|C][e|E][d|D][u|U][r|R][e|E]
