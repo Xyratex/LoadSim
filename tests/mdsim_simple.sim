@@ -15,4 +15,4 @@ procedure test1
 	rename "hard-1" "hard-2" expected OK
 endproc
 server MDS0 10.0.3.2@o2ib "cstorfs"
-client CLI0 test1
+client "CLI0" test1
