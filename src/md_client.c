@@ -1,11 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 #include <errno.h>
 
 #include "list.h"
 #include "md_client.h"
 #include "kernel.h"
+#include "vm_defs.h"
 #include "vm_compile.h"
 #include "kapi.h" /* XXXX */
 
@@ -21,7 +23,21 @@ int server_create(char *name, char *fs, char *nid)
 }
 
 LIST_HEAD(clients);
-static long cliidx;
+static long cliidx = 0;
+
+void client_destroy(struct md_client *cli)
+{
+	if (cli == NULL)
+		return;
+
+	if (cli->mdc_name != NULL)
+		free(cli->mdc_name);
+
+	if (cli->mdc_stats != NULL)
+		free(cli->mdc_stats);
+
+	free(cli);
+}
 
 int client_create(char *name, char *program)
 {
@@ -39,12 +55,20 @@ int client_create(char *name, char *program)
 	cli = malloc(sizeof *cli);
 	if (cli == NULL)
 		return -ENOMEM;
+	memset(cli, 0, sizeof *cli);
 
 	cli->mdc_name = strdup(name);
 	if (cli->mdc_name == NULL) {
-		free(cli);
+		client_destroy(cli);
 		return -ENOMEM;
 	}
+	cli->mdc_stats = malloc((VM_MD_CALL_MAX - VM_MD_CALL_MAX) * 
+				sizeof(*cli->mdc_stats));
+	if (cli->mdc_stats == NULL) {
+		client_destroy(cli);
+		return -ENOMEM;
+	}
+
 	cli->mdc_id = cliidx ++;
 	cli->mdc_prg = prg;
 	cli->mdc_mds = &sl;
@@ -56,24 +80,13 @@ int client_create(char *name, char *program)
 	if (rc == 0) {
 		list_add(&cli->mdc_link, &clients);
 	} else {
-		free(cli->mdc_name);
-		free(cli);
+		client_destroy(cli);
 	}
 
 	return rc;
+
 }
 
-static unsigned int clients_get_count()
-{
-	unsigned int i = 0;
-	struct list_head *tmp;
-
-	list_for_each(tmp, &clients) {
-		i ++;
-	}
-
-	return i;
-}
 
 static struct md_client *clients_find_by_id(long id)
 {
@@ -86,34 +99,43 @@ static struct md_client *clients_find_by_id(long id)
 	return NULL;
 }
 
+static const char *md_names[] = {
+	"VM_MD_CALL_CD",
+	"VM_MD_CALL_MKDIR",
+	"VM_MD_CALL_READDIR",
+	"VM_MD_CALL_UNLINK",
+	"VM_MD_CALL_OPEN",
+	"VM_MD_CALL_CLOSE",
+	"VM_MD_CALL_STAT",
+	"VM_MD_CALL_CHMOD",
+	"VM_MD_CALL_CHOWN",
+	"VM_MD_CALL_CHTIME",
+	"VM_MD_CALL_TRUNCATE",
+	"VM_MD_CALL_SOFTLINK",
+	"VM_MD_CALL_HARDLINK",
+	"VM_MD_CALL_READLINK",
+	"VM_MD_CALL_RENAME",
+};
+const char *md_stat_name(int md_op)
+{
+	return md_names[md_op - VM_MD_CALL_CD];
+}
+
 int clients_get_stats(void)
 {
-	int clicnt = clients_get_count();
-	struct simul_res *data;
+	struct md_client *cli;
 	int rc = 0;
 
-	if (clicnt == 0)
-		return -ENODATA;
-
-	data = malloc(sizeof (*data) * clicnt);
-	if (data == NULL)
-		return -ENOMEM;
-
-	rc = simul_api_get_results(data);
-	if (rc == 0) {
-		int i;
-		struct md_client *cli;
-
-		for (i = 0; i < clicnt; i++) {
-			cli = clients_find_by_id(data[i].sr_cli);
-			if (cli != NULL) {
-				cli->mdc_rc = data[i].sr_res;
-				cli->mdc_op = data[i].sr_ip;
-			} else
-				rc = -ESRCH;
+	list_for_each_entry(cli, &clients, mdc_link) {
+		cli->mdc_stats_num = VM_MD_CALL_MAX - VM_MD_CALL_CD;
+		cli->mdc_stats = malloc(sizeof(*cli->mdc_stats) *
+					cli->mdc_stats_num);
+		if (cli->mdc_stats == NULL) {
+			rc = -ENOMEM;
+			continue;
 		}
+		simul_api_get_results(cli->mdc_id, &cli->mdc_rc, &cli->mdc_op,
+				      cli->mdc_stats);
 	}
-
-	free(data);
 	return rc;
 }

@@ -83,23 +83,14 @@ err:
 	return rc;
 }
 
-int get_results(struct simul_res __user *data)
+int results_get(struct simul_ioctl_res __user *data)
 {
-	int size;
-	int rc;
-	void *res;
+	struct simul_ioctl_res _data;
 
-	size = sizeof(*data) * env_count();
-	res = vmalloc(size);
-	if (res == NULL)
-		return -ENOMEM;
+	if (copy_from_user(&_data, data, sizeof(_data)))
+		return -EFAULT;
 
-	env_results_get(res);
-
-	rc = copy_to_user(data, res, size) == 0 ? -EFAULT : 0;
-	vfree(res);
-
-	return rc;
+	return env_results_get(_data.ss_cli, _data.ss_res, _data.ss_ip, _data.ss_stats);
 }
 
 static int simul_ioctl(struct inode *inode, struct file *file,
@@ -118,9 +109,8 @@ static int simul_ioctl(struct inode *inode, struct file *file,
 		wake_up(&clients_run);
 		break;
 	case SIM_IOW_RESULTS:
-		rc = get_results((struct simul_res *)arg);
+		rc = results_get((struct simul_ioctl_res *)arg);
 		break;
-	case SIM_IOW_STATS:
 	default:
 		rc = -ENOSYS;
 		break;

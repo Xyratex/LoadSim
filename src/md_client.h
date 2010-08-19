@@ -2,6 +2,8 @@
 #define _MD_CLIENT_H_
 
 #include "list.h"
+#include <stdint.h>
+#include "kapi.h"
 
 /**
  connection to meta-data server
@@ -26,6 +28,9 @@ struct server_link {
 int server_create(char *, char *, char *);
 
 void server_destroy(const char *name);
+
+
+const char *md_stat_name(int md_op);
 
 struct vm_program;
 /**
@@ -55,11 +60,15 @@ struct md_client {
 	/**
 	 status of program execution
 	 */
-	long			mdc_rc;
+	uint32_t		mdc_rc;
 	/**
 	 last operation executed
 	 */
-	long			mdc_op;
+	uint32_t		mdc_op;
+	/**
+	*/
+	uint32_t		mdc_stats_num;
+	struct simul_stat_op	*mdc_stats;
 };
 
 extern struct list_head clients;

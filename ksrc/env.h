@@ -2,8 +2,8 @@
 #define __SIMUL_ENV_H_
 
 struct stack_vm;
+struct simul_stat_op;
 struct simul_ioctl_cli;
-struct simul_res;
 
 struct md_client;
 struct md_private;
@@ -38,6 +38,9 @@ struct simul_env {
 		struct md_client	*se_md;
 	} u;
 	struct md_private	*se_data;
+
+	uint32_t		se_stat_tn; /** << number of stats */
+	struct op_time_stat	*se_stat_t;
 };
 
 /**
@@ -60,6 +63,7 @@ int env_count(void);
 /**
  get results
  */
-void env_results_get(struct simul_res *data);
+int env_results_get(uint32_t id, uint32_t __user *res, uint32_t __user *ip,
+		     struct simul_stat_op __user *data);
 
 #endif

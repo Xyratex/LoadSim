@@ -37,7 +37,8 @@ int simul_api_wait_finished(void);
 /**
  obtain results from finished clients
  */
-int simul_api_get_results(struct simul_res *res);
+int simul_api_get_results(uint32_t id, uint32_t *res, uint32_t *ip,
+		     struct simul_stat_op *data);
 
 /**
  destroy kernel test environment and close kernel<>userland communication

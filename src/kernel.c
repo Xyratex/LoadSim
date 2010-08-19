@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <stdint.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <poll.h>
@@ -71,12 +72,19 @@ int simul_api_wait_finished()
 	return rc;
 }
 
-int simul_api_get_results(struct simul_res *res)
+int simul_api_get_results(uint32_t id, uint32_t *res, uint32_t *ip,
+		     struct simul_stat_op *data)
 {
+	struct simul_ioctl_res _res;
 	if (api_fd == -1)
 		return -ENOSYS;
 
-	return ioctl(api_fd, SIM_IOW_RESULTS, (long)res);
+	_res.ss_cli = id;
+	_res.ss_res = res;
+	_res.ss_ip = ip;
+	_res.ss_stats = data;
+
+	return ioctl(api_fd, SIM_IOW_RESULTS, (long)&_res);
 }
 
 int simul_api_close()

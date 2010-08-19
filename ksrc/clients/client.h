@@ -8,7 +8,7 @@ enum {
 struct md_private;
 
 struct md_client {
-	int (*cli_init)(struct md_private **env, char *fsname, char *dstnid);
+	int (*cli_init)(struct md_private **env, const char *fsname, const char *dstnid);
 	int (*cli_prerun)(struct md_private *env);
 	int (*cli_fini)(struct md_private *env);
 

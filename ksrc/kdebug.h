@@ -1,5 +1,5 @@
-#ifndef __MD_SIM_KDEBUG__
-#define __MD_SIM_KDEBUG__
+#ifndef __SIM_KDEBUG__
+#define __SIM_KDEBUG__
 
 #include <linux/kernel.h>
 

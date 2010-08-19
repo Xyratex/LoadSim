@@ -37,10 +37,6 @@ enum simul_ops {
 	 @see struct simul_res
 	 */
 	SIM_IOW_RESULTS,
-	/**
-	 get statistic for each clients
-	 */
-	SIM_IOW_STATS,
 };
 
 #ifndef __user
@@ -60,12 +56,19 @@ struct simul_ioctl_cli {
 };
 
 /**
- enter of array to return from operation SOM_IOW_RESULTS
+ array to return from operation SIM_IOW_RESULTS
  */
-struct simul_res {
-	long sr_cli;
-	long sr_res;
-	long sr_ip;
+struct simul_stat_op {
+	int64_t sso_op_id;
+	int64_t sso_min_time;
+	int64_t sso_max_time;
+	int64_t sso_avg_time;
 };
 
+struct simul_ioctl_res {
+	uint32_t		ss_cli;
+	uint32_t		*ss_res;
+	uint32_t		*ss_ip;
+	struct simul_stat_op __user *ss_stats; /** < fill by kernel */
+};
 #endif

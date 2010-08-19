@@ -1,15 +1,16 @@
 #include <linux/list.h>
 #include <linux/slab.h>
 #include <linux/string.h>
+#include <linux/time.h>
+#include <linux/uaccess.h>
 
 #include "env.h"
 #include "kapi.h"
 #include "kdebug.h"
 #include "vm_defs.h"
 #include "vm_api.h"
-#include "fifo.h"
-
-#include "clients/client.h"
+#include "md_cli.h"
+#include "stats.h"
 
 static LIST_HEAD(clients);
 
@@ -21,8 +22,7 @@ static void env_destroy(struct simul_env *env)
 	if (env->se_vm != NULL)
 		vm_interpret_fini(env->se_vm);
 
-	if (env->u.se_md && env->u.se_md->cli_fini)
-		env->u.se_md->cli_fini(env->se_data);
+	md_cli_fini(env);
 
 	if (env->se_name)
 		kfree(env->se_name);
@@ -51,9 +51,7 @@ int env_create(struct simul_env **env, struct simul_ioctl_cli *data)
 
 	ret->se_id = data->sic_id;
 
-	ret->u.se_md = &generic_cli;
-	rc = ret->u.se_md->cli_init(&ret->se_data, data->sic_dst_fs,
-				    data->sic_dst_nid);
+	rc = md_cli_init(ret, data->sic_dst_fs, data->sic_dst_nid);
 	if (rc < 0)
 		goto err;
 		
@@ -76,12 +74,12 @@ int env_run(struct simul_env *env)
 {
 	int rc;
 
-	rc = env->u.se_md->cli_prerun(env->se_data);
+	rc = md_cli_prerun(env);
 	if (rc < 0) {
-		err_print("prerun error %d\n", rc);
+		err_print("can't call prerun\n");
 		return rc;
 	}
-
+	
 	vm_interpret_run(env->se_vm);
 
 	return 0;
@@ -98,31 +96,56 @@ void env_destroy_all(void)
 	}
 }
 
-int env_count()
+/* to md_cli ? */
+static int env_stat_to_user(uint32_t id, struct op_time_stat *orig,
+			    struct simul_stat_op __user *new)
 {
-	int i = 0;
-	struct list_head *tmp;
+	struct simul_stat_op tmp;
 
-	list_for_each(tmp, &clients)
-		i++;
+	tmp.sso_op_id = id + VM_MD_CALL_CD;
+	tmp.sso_min_time = timespec_to_ns(&orig->ot_min) / NSEC_PER_USEC;
+	tmp.sso_max_time = timespec_to_ns(&orig->ot_max) / NSEC_PER_USEC;
+	tmp.sso_avg_time = timespec_to_ns(&orig->ot_sum) / NSEC_PER_USEC;
+	if (orig->ot_count)
+		tmp.sso_avg_time /= orig->ot_count;
 
-	return i;
+	if (copy_to_user(new, &tmp, sizeof(*new)))
+		return -EFAULT;
+
+	return 0;
 }
 
-static void env_result_user(struct simul_env *env, struct simul_res *data)
+
+static int env_result_to_user(struct simul_env *env, uint32_t __user *res,
+			      uint32_t __user *ip,
+			      struct simul_stat_op __user *data)
 {
-	data->sr_cli = env->se_id;
-	data->sr_res = env->se_vm->sv_rc;
-	data->sr_ip = env->se_vm->sv_ip;
+	int i;
+
+	if (copy_to_user(ip, &env->se_vm->sv_ip, sizeof(*ip)))
+		return -EFAULT;
+
+	if (copy_to_user(res, &env->se_vm->sv_rc, sizeof(*res)))
+		return -EFAULT;
+
+	for (i = 0; i < env->se_stat_tn; i++)
+		if (env_stat_to_user(i, &env->se_stat_t[i], (data + i)))
+			return -EFAULT;
+
+	return 0;
 }
 
-void env_results_get(struct simul_res *res)
+int env_results_get(uint32_t id, uint32_t __user *res, uint32_t __user *ip,
+		    struct simul_stat_op __user *data)
 {
 	struct simul_env *pos;
-	int i = 0;
 
 	list_for_each_entry(pos, &clients, se_link) {
-		env_result_user(pos, &res[i]);
-		i++;
+		if (pos->se_id == id) {
+			return env_result_to_user(pos, res, ip, data);
+		}
 	}
+
+	return -ENOENT;
 }
+
