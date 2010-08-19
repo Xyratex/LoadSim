@@ -31,13 +31,13 @@ int encode_mkdir(struct vm_program *vprg, char *dir, int mode)
 	int ret;
 	union cmd_arg arg;
 
-	arg.cd_long = mode;
-	ret = vm_encode(vprg, VM_CMD_PUSHL, arg);
+	arg.cd_string = dir;
+	ret = vm_encode(vprg, VM_CMD_PUSHS, arg);
 	if (ret)
 		return ret;
 
-	arg.cd_string = dir;
-	ret = vm_encode(vprg, VM_CMD_PUSHS, arg);
+	arg.cd_long = mode;
+	ret = vm_encode(vprg, VM_CMD_PUSHL, arg);
 	if (ret)
 		return ret;
 
@@ -465,31 +465,49 @@ int encode_expected(struct vm_program *vprg, int exp)
 /**
  create tmp_name; mkdir ; cd;
  */
-int encode_make_workdir(struct vm_program *prg)
+int encode_make_workdir(struct vm_program *vprg, int mode)
 {
 	char name[256] = {0};
-	int rc;
+	int ret;
+	union cmd_arg arg;
 
 	strcpy(name, "workd-XXXXXXX");
-	rc = mkstemp(name);
-	if (rc < 0)
-		return -EINVAL;
+	arg.cd_string = name;
+	ret = vm_encode(vprg, VM_CMD_PUSHS, arg);
+	if (ret < 0)
+		return ret;
 
-	rc = encode_mkdir(prg, name, 0777);
-	if (rc < 0)
-		return rc;
+	arg.cd_call = VM_SYS_TMPNAME;
+	ret = vm_encode(vprg, VM_CMD_CALL, arg);
+	if (ret < 0)
+		return ret;
 
-	rc = encode_expected(prg, VM_RET_OK);
-	if (rc < 0)
-		return rc;
+	ret = vm_encode(vprg, VM_CMD_DUP, arg);
+	if (ret)
+		return ret;
 
-	rc = encode_cd(prg, name);
-	if (rc < 0)
-		return rc;
+	arg.cd_long = mode;
+	ret = vm_encode(vprg, VM_CMD_PUSHL, arg);
+	if (ret)
+		return ret;
 
-	rc = encode_expected(prg, VM_RET_OK);
-	if (rc < 0)
-		return rc;
+	arg.cd_call = VM_MD_CALL_MKDIR;
+	ret = vm_encode(vprg, VM_CMD_CALL, arg);
+	if (ret < 0)
+		return ret;
+
+	ret = encode_expected(vprg, VM_RET_OK);
+	if (ret < 0)
+		return ret;
+
+	arg.cd_call = VM_MD_CALL_CD;
+	ret = vm_encode(vprg, VM_CMD_CALL, arg);
+	if (ret < 0)
+		return ret;
+
+	ret = encode_expected(vprg, VM_RET_OK);
+	if (ret < 0)
+		return ret;
 
 	return 0;
 }

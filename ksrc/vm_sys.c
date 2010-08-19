@@ -4,7 +4,9 @@
 #include <linux/delay.h>
 #include <linux/wait.h>
 #include <linux/bitops.h>
+#include <linux/random.h>
 
+#include "kdebug.h"
 #include "fifo.h"
 #include "vm_defs.h"
 #include "vm_api.h"
@@ -79,11 +81,34 @@ static int sys_call_race(struct simul_env *env, struct fifo *f, uint32_t *ip)
 	return 0;
 }
 
+static int sys_call_tmpname(struct simul_env *env, struct fifo *f, uint32_t *ip)
+{
+	char *prefix;
+	int len;
+	int i;
+
+	if (fifo_pop(f, (long *)&prefix) < 0)
+		return -ENODATA;
+
+	len = strlen(prefix);
+	for (i = 0; i < len; i++) {
+		if (prefix[i] == 'X') {
+			unsigned char byte;
+
+			get_random_bytes(&byte, 1);
+			prefix[i] = '1' + (byte % 10);
+		}
+	}
+
+	return fifo_push(f, (long)prefix);
+}
+
 struct handler_reg sys_hld[] = {
     {.hr_id = VM_SYS_USER, .hr_func = sys_call_user },
     {.hr_id = VM_SYS_GROUP, .hr_func = sys_call_group },
     {.hr_id = VM_SYS_SLEEP, .hr_func = sys_call_sleep },
     {.hr_id = VM_SYS_RACE, .hr_func = sys_call_race },
+    {.hr_id = VM_SYS_TMPNAME, .hr_func = sys_call_tmpname },
 };
 
 int sys_handlers_register()

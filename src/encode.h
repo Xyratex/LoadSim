@@ -38,7 +38,7 @@ int encode_race(struct vm_program *prg, int raceid);
 int encode_loop_do(struct vm_program *prg);
 int encode_loop_loop(struct vm_program *prg, int num);
 int encode_expected(struct vm_program *prg, int val);
-int encode_make_workdir(struct vm_program *prg);
+int encode_make_workdir(struct vm_program *prg, int mode);
 
 int procedure_start(char *name);
 struct vm_program *procedure_current(void);

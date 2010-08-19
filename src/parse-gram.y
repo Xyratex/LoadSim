@@ -264,11 +264,11 @@ chgid:
 	;
 
 mkwd:
-	TOK_MKWD
+	TOK_MKWD TOK_NUMBER
 	{
 		int ret;
 
-		ret = encode_make_workdir(procedure_current());
+		ret = encode_make_workdir(procedure_current(), $2);
 		if (ret)
 			YYABORT;
 	}

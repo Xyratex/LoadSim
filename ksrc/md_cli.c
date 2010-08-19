@@ -82,10 +82,10 @@ static int md_call_mkdir(struct simul_env *env, struct fifo *f, uint32_t *ip)
 	char *dirname;
 	long mode;
 
-	if (fifo_pop(f, (long *)&dirname) < 0)
+	if (fifo_pop(f, &mode) < 0)
 		return -ENODATA;
 
-	if (fifo_pop(f, &mode) < 0)
+	if (fifo_pop(f, (long *)&dirname) < 0)
 		return -ENODATA;
 
 	ret = MD_CALL(env, VM_MD_CALL_MKDIR, mkdir, dirname, mode);

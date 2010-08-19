@@ -108,6 +108,10 @@ enum vm_sys_calls {
 	 simulate race between threads
 	 */
 	VM_SYS_RACE	= 3,
+	/**
+	 generate unique name
+	 */
+	VM_SYS_TMPNAME  = 4,
 	VM_SYS_CALL_MAX
 };
 
