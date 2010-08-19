@@ -96,7 +96,7 @@ static int sys_call_tmpname(struct simul_env *env, struct fifo *f, uint32_t *ip)
 			unsigned char byte;
 
 			get_random_bytes(&byte, 1);
-			prefix[i] = '1' + (byte % 10);
+			prefix[i] = '0' + (byte % 10);
 		}
 	}
 
