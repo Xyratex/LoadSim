@@ -6,11 +6,11 @@ AH_TEMPLATE([PACKAGE], [Package name.])
 AH_TEMPLATE([VERSION], [Version of the package.]) 
 AH_TEMPLATE([LINUX], [Path to linux sources])
 AH_TEMPLATE([LINUX_OBJ], [Path to linux sources])
-AH_TEMPLATE([DEBUG], [Enable debug])
+AH_TEMPLATE([DEBUG], [Enable debug prints])
 
 PACKAGE=loadsim
-VERSION=0.1                                                                 
-                                                                                                                      
+VERSION=0.1
+
 AM_INIT_AUTOMAKE([$PACKAGE], [$VERSION]) 
 
 AC_DEFUN([SIM_KERNEL], [
@@ -33,6 +33,10 @@ AC_DEFUN([SIM_KERNEL], [
 
         AC_MSG_RESULT([$LINUX_OBJ])
         AC_SUBST([LINUX_OBJ])
+
+	KMOD="/lib/modules/`uname -r`"
+	AC_SUBST([KMOD]) 
+
 ])
 
 AC_DEFUN([SIM_USERLAND], [
@@ -47,17 +51,17 @@ AC_ARG_ENABLE([debug],
         [enable_debug=yes]
 )
 KCC=""
+
 if test xenable_debug == xyes; then
 	KCC="$KCC -g"
-	AC_DEFINE(DEBUG)
+	AC_DEFINE(DEBUG, [1])
+else
+	AC_DEFINE(DEBUG, [0])
 fi
-AC_SUBST(DEBUG)
 AC_SUBST(KCC)
 
 
 SIM_KERNEL
-KMOD="/lib/modules/`uname -r`"                                                                           
-AC_SUBST([KMOD]) 
 
 SIM_USERLAND
 

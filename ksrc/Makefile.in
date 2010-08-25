@@ -7,11 +7,12 @@ else
     	KDIR      := @LINUX_OBJ@
     	PWD       := $(shell cd @srcdir@; pwd)
     	ROOT	  := $(shell cd @top_srcdir@; pwd)
+    	EXTRA_CF  := @KCC@ -I $(ROOT)/include -I $(PWD) -I $(ROOT)
 all:
-	$(MAKE) -C $(KDIR) SUBDIRS=$(PWD) EXTRA_CFLAGS="@KCC@ -I $(ROOT)/include -I $(PWD)" modules 
+	$(MAKE) -C $(KDIR) SUBDIRS=$(PWD) EXTRA_CFLAGS="$(EXTRA_CF)" modules 
 
 install modules_install:
-	$(MAKE) INSTALL_MOD_DIR=kernel/fs/lustre/sim -C $(KDIR) SUBDIRS=$(PWD) modules_install                               
+	$(MAKE) INSTALL_MOD_DIR=kernel/fs/lustre/sim -C $(KDIR) SUBDIRS=$(PWD) modules_install
 uninstall:
 	rm -fr @KMOD@/kernel/fs/lustre/sim
 endif

@@ -1,4 +1,5 @@
 %x str
+%option yylineno
 
 %{
 #include <stdio.h>
@@ -13,6 +14,15 @@
 enum {
 	MAX_STRING_SIZE = 256
 };
+
+int colnum;
+
+#define YY_USER_ACTION \
+	{ yylloc.first_line = yylineno; \
+	  yylloc.first_column = colnum; \
+	  colnum = colnum + yyleng; \
+	  yylloc.last_column=colnum; \
+	  yylloc.last_line = yylineno; }
 
 static char string_buf[MAX_STRING_SIZE];
 static int string_idx;

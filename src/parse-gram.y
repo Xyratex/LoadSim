@@ -3,17 +3,14 @@
 #include <string.h>
 #include "encode.h"
 
-void yyerror(const char *str)
-{
-	fprintf(stderr,"error: %s\n", str);
-}
-
-int yywrap()
-{
-	return 1;
-}
+void yyerror(const char *str);
 
 %}
+
+/* Location tracking.  */
+%locations
+/* Pure yylex.  */
+%define "api.pure"
 
 %union {
 	char *strval;
@@ -92,8 +89,8 @@ server_set:
 client_set:
 	TOK_CLIENT QSTRING TOK_ID
 	{
-		int ret; 
-		
+		int ret;
+
 		ret = clients_create($2, $3);
 		free($2);
 		free($3);
@@ -612,3 +609,17 @@ expected:
 	}
 	;
 %%
+
+extern char *yytext;
+
+void yyerror(const char *str)
+{
+	fprintf(stderr,"error: %s - between ", str);
+	YY_LOCATION_PRINT(stderr, yylloc);
+	fprintf(stderr, "(line.column-line.column) - text: %s\n", yytext);
+}
+
+int yywrap()
+{
+	return 1;
+}

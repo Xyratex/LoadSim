@@ -1,5 +1,5 @@
 AM_YFLAGS = -d 
-AM_CFLAGS = @CFLAGS@ -I ../include -D YYERROR_VERBOSE=1 -DDEBUG=1
+AM_CFLAGS = @CFLAGS@ -I ../include -D YYERROR_VERBOSE=1
 
 sbin_PROGRAMS=mdsim
 
