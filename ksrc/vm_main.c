@@ -94,7 +94,7 @@ int vm_interpret_run(struct stack_vm *vm)
 	while(vm->sv_ip < vm->sv_size) {
 		old_ip = vm->sv_ip;
 		op = vm->sv_program[vm->sv_ip ++];
-		printk("trace %lx op %d\n", old_ip, op);
+		DPRINT("trace %lx op %d\n", old_ip, op);
 		if ((op > ARRAY_SIZE(int_fn)) || (int_fn[op] == NULL)) {
 			err_print("unknow op (%c) !\n", op);
 			rc = -EINVAL;

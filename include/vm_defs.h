@@ -84,7 +84,7 @@ int foo(void *env, struct fifo *f, uint32_t *ip)
 		return -ENODATA;
 
 	current->gid = current->fsgid = gid;
-	return fifo_push(f, VM_RET_OK);
+	return fifo_push(f, 0);
 }
 */
 

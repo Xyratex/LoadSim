@@ -70,7 +70,7 @@ static int md_call_cd(struct simul_env *env, struct fifo *f, uint32_t *ip)
 		return -ENODATA;
 
 	ret = MD_CALL(env, VM_MD_CALL_CD, cd, dirname);
-	return fifo_push(f, ret ? VM_RET_FAIL : VM_RET_OK);
+	return fifo_push(f, ret);
 }
 
 /**
@@ -90,7 +90,7 @@ static int md_call_mkdir(struct simul_env *env, struct fifo *f, uint32_t *ip)
 
 	ret = MD_CALL(env, VM_MD_CALL_MKDIR, mkdir, dirname, mode);
 
-	return fifo_push(f, ret ? VM_RET_FAIL : VM_RET_OK);
+	return fifo_push(f, ret);
 }
 
 /**
@@ -107,7 +107,7 @@ static int md_call_readdir(struct simul_env *env, struct fifo *f, uint32_t *ip)
 
 	ret = MD_CALL(env, VM_MD_CALL_READIR, readdir, dirname);
 
-	return fifo_push(f, ret ? VM_RET_FAIL : VM_RET_OK);
+	return fifo_push(f, ret);
 }
 
 /**
@@ -123,7 +123,7 @@ static int md_call_unlink(struct simul_env *env, struct fifo *f, uint32_t *ip)
 
 	ret = MD_CALL(env, VM_MD_CALL_UNLINK, unlink, name);
 
-	return fifo_push(f, ret ? VM_RET_FAIL : VM_RET_OK);
+	return fifo_push(f, ret);
 }
 
 /**
@@ -147,7 +147,7 @@ static int md_call_open(struct simul_env *env, struct fifo *f, uint32_t *ip)
 		return -ENODATA;
 
 	ret = MD_CALL(env, VM_MD_CALL_OPEN, open, name, flags, mode, reg);
-	return fifo_push(f, ret ? VM_RET_FAIL : VM_RET_OK);
+	return fifo_push(f, ret);
 }
 
 /**
@@ -162,7 +162,7 @@ static int md_call_close(struct simul_env *env, struct fifo *f, uint32_t *ip)
 		return -ENODATA;
 		
 	ret = MD_CALL(env, VM_MD_CALL_CLOSE, close, reg);
-	return fifo_push(f, ret ? VM_RET_FAIL : VM_RET_OK);
+	return fifo_push(f, ret);
 }
 
 /**
@@ -177,7 +177,7 @@ static int md_call_stat(struct simul_env *env, struct fifo *f, uint32_t *ip)
 		return -ENODATA;
 
 	ret = MD_CALL(env, VM_MD_CALL_STAT, stat, name);
-	return fifo_push(f, ret ? VM_RET_FAIL : VM_RET_OK);
+	return fifo_push(f, ret);
 }
 
 /**
@@ -195,7 +195,7 @@ static int md_call_chmod(struct simul_env *env, struct fifo *f, uint32_t *ip)
 		return -ENODATA;
 
 	ret = MD_CALL(env, VM_MD_CALL_CHMOD, chmod, name, mode);
-	return fifo_push(f, ret ? VM_RET_FAIL : VM_RET_OK);
+	return fifo_push(f, ret);
 }
 
 /**
@@ -216,7 +216,7 @@ static int md_call_chown(struct simul_env *env, struct fifo *f, uint32_t *ip)
 		return -ENODATA;
 
 	ret = MD_CALL(env, VM_MD_CALL_CHOWN, chown, name, uid, gid);
-	return fifo_push(f, ret ? VM_RET_FAIL : VM_RET_OK);
+	return fifo_push(f, ret);
 }
 
 /**
@@ -234,7 +234,7 @@ static int md_call_chtime(struct simul_env *env, struct fifo *f, uint32_t *ip)
 		return -ENODATA;
 
 	ret = MD_CALL(env, VM_MD_CALL_CHTIME, chtime, name, time);
-	return fifo_push(f, ret ? VM_RET_FAIL : VM_RET_OK);
+	return fifo_push(f, ret);
 }
 
 /**
@@ -252,7 +252,7 @@ static int md_call_truncate(struct simul_env *env, struct fifo *f, uint32_t *ip)
 		return -ENODATA;
 
 	ret = MD_CALL(env, VM_MD_CALL_TRUNCATE, truncate, name, size);
-	return fifo_push(f, ret ? VM_RET_FAIL : VM_RET_OK);
+	return fifo_push(f, ret);
 }
 
 /**
@@ -270,7 +270,7 @@ static int md_call_softlink(struct simul_env *env, struct fifo *f, uint32_t *ip)
 		return -ENODATA;
 
 	ret = MD_CALL(env, VM_MD_CALL_SOFTLINK, softlink, name, new);
-	return fifo_push(f, ret ? VM_RET_FAIL : VM_RET_OK);
+	return fifo_push(f, ret);
 }
 
 /**
@@ -288,7 +288,7 @@ static int md_call_hardlink(struct simul_env *env, struct fifo *f, uint32_t *ip)
 		return -ENODATA;
 
 	ret = MD_CALL(env, VM_MD_CALL_HARDLINK, hardlink, name, new);
-	return fifo_push(f, ret ? VM_RET_FAIL : VM_RET_OK);
+	return fifo_push(f, ret);
 }
 
 /**
@@ -303,7 +303,7 @@ static int md_call_readlink(struct simul_env *env, struct fifo *f, uint32_t *ip)
 		return -ENODATA;
 
 	ret = MD_CALL(env, VM_MD_CALL_READLINK, readlink, name);
-	return fifo_push(f, ret ? VM_RET_FAIL : VM_RET_OK);
+	return fifo_push(f, ret);
 }
 
 /**
@@ -321,7 +321,7 @@ static int md_call_rename(struct simul_env *env, struct fifo *f, uint32_t *ip)
 		return -ENODATA;
 
 	ret = MD_CALL(env, VM_MD_CALL_RENAME, rename, name, new);
-	return fifo_push(f, ret ? VM_RET_FAIL : VM_RET_OK);
+	return fifo_push(f, ret);
 }
 
 

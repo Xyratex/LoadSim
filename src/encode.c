@@ -439,7 +439,7 @@ int encode_expected(struct vm_program *vprg, int exp)
 	if (ret)
 		return ret;
 
-	arg.cd_long = exp;
+	arg.cd_long = 0;
 	ret = vm_encode(vprg, VM_CMD_PUSHL, arg);
 	if (ret)
 		return ret;
@@ -450,11 +450,11 @@ int encode_expected(struct vm_program *vprg, int exp)
 		return ret;
 
 	arg.cd_string = END_LABEL;
-	ret = vm_encode(vprg, VM_CMD_JNZ,arg);
+	ret = vm_encode(vprg, exp == VM_RET_OK ? VM_CMD_JNZ : VM_CMD_JZ, arg);
 	if (ret)
 		return ret;
 
-	/* arg not used */
+	/* return code same as expected, drop it */
 	ret = vm_encode(vprg, VM_CMD_NOP, arg);
 	if (ret)
 		return ret;

@@ -2,13 +2,15 @@
 #include "stdlib.h"
 
 #include "md_client.h"
+#include "vm_compile.h"
 #include "debug.h"
 #include "kernel.h"
 
 void client_res(struct md_client *cli)
 {
 	int i = 0;
-	printf("cli %s : rc %d\n", cli->mdc_name, cli->mdc_rc);
+	printf("cli %s : last op %d total %d rc %d\n",
+	       cli->mdc_name, cli->mdc_op, cli->mdc_prg->vmp_enc_idx, cli->mdc_rc);
 
 	for(i=0; i<cli->mdc_stats_num; i++) {
 		printf("\t%s : %u/%u/%u\n", 

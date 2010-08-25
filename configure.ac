@@ -4,8 +4,6 @@ AC_CONFIG_HEADER([loadsim_c.h])
 
 AH_TEMPLATE([PACKAGE], [Package name.])
 AH_TEMPLATE([VERSION], [Version of the package.]) 
-AH_TEMPLATE([LINUX], [Path to linux sources])
-AH_TEMPLATE([LINUX_OBJ], [Path to linux sources])
 AH_TEMPLATE([DEBUG], [Enable debug prints])
 
 PACKAGE=loadsim
@@ -52,7 +50,7 @@ AC_ARG_ENABLE([debug],
 )
 KCC=""
 
-if test xenable_debug == xyes; then
+if test "x$enable_debug" = xyes; then
 	KCC="$KCC -g"
 	AC_DEFINE(DEBUG, [1])
 else
