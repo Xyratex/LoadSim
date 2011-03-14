@@ -14,7 +14,7 @@ all:
 install modules_install:
 	$(MAKE) INSTALL_MOD_DIR=kernel/fs/lustre/sim -C $(KDIR) SUBDIRS=$(PWD) modules_install
 uninstall:
-	rm -fr @KMOD@/kernel/fs/lustre/sim
+	rm -fr @KMOD_DIR@/kernel/fs/lustre/sim
 endif
 
 clean distclean:

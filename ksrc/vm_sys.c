@@ -17,11 +17,16 @@
 static int sys_call_user(struct simul_env *env, struct fifo *f, uint32_t *ip)
 {
 	long uid;
+	struct cred *cred;
 
 	if (fifo_pop(f, &uid))
 		return -ENODATA;
 
-	current->uid = current->fsuid = uid;
+	if ((cred = prepare_creds())) {
+		cred->uid = uid;
+		cred->fsuid = uid;
+		commit_creds(cred);
+	}
 
 	return 0;
 }
@@ -32,11 +37,17 @@ static int sys_call_user(struct simul_env *env, struct fifo *f, uint32_t *ip)
 static int sys_call_group(struct simul_env *env, struct fifo *f, uint32_t *ip)
 {
 	long gid;
+	struct cred *cred;
 
 	if (fifo_pop(f, &gid))
 		return -ENODATA;
 
-	current->gid = current->fsgid = gid;
+	if ((cred = prepare_creds())) {
+		cred->gid = gid;
+		cred->fsgid = gid;
+		commit_creds(cred);
+	}
+
 
 	return 0;
 }

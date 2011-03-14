@@ -40,6 +40,7 @@ void stat_time_update(struct op_time_stat *st, struct timespec *val)
 	st->ot_sum.tv_nsec += val->tv_nsec;
 }
 
+#ifndef HAVE_NORM_TIMESPEC
 void set_normalized_timespec(struct timespec *ts, time_t sec, long nsec)
 {
 	while (nsec >= NSEC_PER_SEC) {
@@ -54,3 +55,4 @@ void set_normalized_timespec(struct timespec *ts, time_t sec, long nsec)
 	ts->tv_nsec = nsec;
 
 }
+#endif

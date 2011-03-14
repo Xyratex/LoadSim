@@ -1,12 +1,15 @@
 #include <linux/slab.h>
 #include <linux/errno.h>
 #include <linux/fs.h>
+#include <linux/fs_struct.h>
 #include <linux/namei.h>
 #include <linux/mount.h>
+#include <linux/sched.h>
 #include <linux/statfs.h>
 #include <linux/module.h>
 
 #include "kdebug.h"
+#include "compat.h"
 #include "clients/client.h"
 
 struct md_private {
@@ -95,6 +98,8 @@ static int generic_cli_create(struct md_private **cli, const char *fsname, const
 		ret->lp_mnt = NULL;
 		goto error;
 	}
+	/** disconnect lov + osc from work */
+	
 	*cli = ret;
 	rc = 0;
 	ret = NULL;
@@ -114,30 +119,36 @@ static int generic_cli_prerun(struct md_private *cli)
 	/* make lustre mount as pwd, root, altroot */
 	write_lock(&current->fs->lock);
 	old_fs = *current->fs;
-	current->fs->pwdmnt = mntget(cli->lp_mnt);
-	current->fs->pwd = dget(cli->lp_mnt->mnt_sb->s_root);
-	current->fs->rootmnt = mntget(cli->lp_mnt);
-	current->fs->root = dget(cli->lp_mnt->mnt_sb->s_root);
+	
+	sim_fs_pwdmnt(current->fs) = mntget(cli->lp_mnt);
+	sim_fs_pwd(current->fs) = dget(cli->lp_mnt->mnt_sb->s_root);
+	sim_fs_rootmnt(current->fs) = mntget(cli->lp_mnt);
+	sim_fs_root(current->fs) = dget(cli->lp_mnt->mnt_sb->s_root);
+#ifdef HAVE_VFS_ALTROOT
 	current->fs->altrootmnt = mntget(cli->lp_mnt);
 	current->fs->altroot = dget(cli->lp_mnt->mnt_sb->s_root);
+#endif
 	write_unlock(&current->fs->lock);
 
-	DPRINT("root %p/%p\n", current->fs->pwd, current->fs->pwd->d_inode);
+	DPRINT("root %p/%p\n", sim_fs_pwd(current->fs), sim_fs_pwd(current->fs)->d_inode);
 
-	if (old_fs.pwd)
-		dput(old_fs.pwd);
-	if (old_fs.root)
-		dput(old_fs.root);
+	if (sim_fs_pwd(&old_fs))
+		dput(sim_fs_pwd(&old_fs));
+	if (sim_fs_pwdmnt(&old_fs))
+		mntput(sim_fs_pwdmnt(&old_fs));
+
+	if (sim_fs_root(&old_fs))
+		dput(sim_fs_root(&old_fs));
+
+	if (sim_fs_rootmnt(&old_fs))
+		mntput(sim_fs_rootmnt(&old_fs));
+
+#ifdef HAVE_VFS_ALTROOT
 	if (old_fs.altroot)
 		dput(old_fs.altroot);
-
-	if (old_fs.pwdmnt)
-		mntput(old_fs.pwdmnt);
-	if (old_fs.rootmnt)
-		mntput(old_fs.rootmnt);
 	if (old_fs.altrootmnt)
 		mntput(old_fs.altrootmnt);
-
+#endif
 	return 0;
 }
 
@@ -153,18 +164,18 @@ static int generic_cli_cd(struct md_private *cli, const char *pwd)
 	if (retval)
 		goto out;
 
-	retval = vfs_permission(&nd, MAY_EXEC);
+	retval = sim_exec_permission(nd);
 	if (retval == 0) {
 		/* copy of set_fs_pwd */
 		write_lock(&current->fs->lock);
-		old_pwd = current->fs->pwd;
-		current->fs->pwd = dget(nd.dentry);
+		old_pwd = sim_fs_pwd(current->fs);
+		sim_fs_pwd(current->fs) = dget(sim_nd_dentry(nd));
 		write_unlock(&current->fs->lock);
 
 		if (old_pwd)
 			dput(old_pwd);
 	}
-	path_release(&nd);
+	sim_path_put(&nd);
 out:
 	DPRINT("cd leave %d\n", retval);
 	return retval;
@@ -181,14 +192,14 @@ static int generic_cli_mkdir(struct md_private *cli, const char *pwd, const int 
 	if (retval)
 		goto out;
 
-	DPRINT("found parent %p/%p\n", nd.dentry, nd.dentry->d_inode);
+	DPRINT("found parent %p/%p\n", sim_nd_dentry(nd), sim_nd_dentry(nd)->d_inode);
 	dir = lookup_create(&nd, 0); /* hold i_mutex */
 	if (!IS_ERR(dir)) {
-		retval = vfs_mkdir(nd.dentry->d_inode, dir, mode);
+		retval = vfs_mkdir(sim_nd_dentry(nd)->d_inode, dir, mode);
 		dput(dir);
 	}
-	mutex_unlock(&nd.dentry->d_inode->i_mutex);
-	path_release(&nd);
+	mutex_unlock(&sim_nd_dentry(nd)->d_inode->i_mutex);
+	sim_path_put(&nd);
 out:
 	DPRINT("mkdir leave %d\n", retval);
 	return retval;
@@ -227,16 +238,16 @@ static int generic_cli_unlink(struct md_private *cli, const char *name)
 	if (retval)
 		return retval;
 
-	mutex_lock(&nd.dentry->d_inode->i_mutex);
-	child = lookup_one_len(nd.last.name, nd.dentry, strlen(nd.last.name));
+	mutex_lock(&sim_nd_dentry(nd)->d_inode->i_mutex);
+	child = lookup_one_len(nd.last.name, sim_nd_dentry(nd), strlen(nd.last.name));
 	retval = PTR_ERR(child);
 	if (!IS_ERR(child)) {
 		if (child->d_inode != NULL) {
 			if (S_ISDIR(child->d_inode->i_mode)) {
-				retval = vfs_rmdir(nd.dentry->d_inode, child);
+				retval = vfs_rmdir(sim_nd_dentry(nd)->d_inode, child);
 				dput(child);
 			} else {
-				retval = vfs_unlink(nd.dentry->d_inode, child);
+				retval = vfs_unlink(sim_nd_dentry(nd)->d_inode, child);
 				if (!retval && !(child->d_flags & DCACHE_NFSFS_RENAMED))
 					d_delete(child);
 			}
@@ -244,9 +255,9 @@ static int generic_cli_unlink(struct md_private *cli, const char *name)
 			retval = -ENOENT;
 		}
 	}
-	mutex_unlock(&nd.dentry->d_inode->i_mutex);
+	mutex_unlock(&sim_nd_dentry(nd)->d_inode->i_mutex);
 
-	path_release(&nd);
+	sim_path_put(&nd);
 	return retval;
 }
 
@@ -284,8 +295,8 @@ static int generic_cli_stat(struct md_private *cli, const char *name)
 	retval = path_lookup(name, 0, &nd);
 	if (retval)
 		goto out;
-	retval = vfs_getattr(nd.mnt, nd.dentry, &tmp);
-	path_release(&nd);
+	retval = vfs_getattr(sim_nd_mnt(nd), sim_nd_dentry(nd), &tmp);
+	sim_path_put(&nd);
 out:
 	DPRINT("stat rc %d\n", retval);
 	return retval;
@@ -294,24 +305,27 @@ out:
 static int generic_cli_setattr(const char *name, struct iattr *newattrs)
 {
 	int retval;
+	int suid;
 	struct nameidata nd;
 
 	retval = path_lookup(name, 0, &nd);
 	if (retval)
 		return retval;
 
-	retval = vfs_permission(&nd, MAY_WRITE);
+	retval = sim_write_permission(nd);
 	if (retval)
 		goto exit;
 
 	/* Remove suid/sgid if need */
-	remove_suid(nd.dentry);
+	suid = should_remove_suid(sim_nd_dentry(nd));
+	if (suid)
+		newattrs->ia_valid |= ATTR_FORCE | suid;
 
-	mutex_lock(&nd.dentry->d_inode->i_mutex);
-	retval = notify_change(nd.dentry, newattrs);
-	mutex_unlock(&nd.dentry->d_inode->i_mutex);
+	mutex_lock(&sim_nd_dentry(nd)->d_inode->i_mutex);
+	retval = notify_change(sim_nd_dentry(nd), newattrs);
+	mutex_unlock(&sim_nd_dentry(nd)->d_inode->i_mutex);
 exit:
-	path_release(&nd);
+	sim_path_put(&nd);
 
 	return retval;
 }
@@ -379,7 +393,7 @@ static int generic_cli_lookup(struct md_private *cli, const char *name)
 	retval = path_lookup(name, 0, &nd);
 	if (retval)
 		return retval;
-	path_release(&nd);
+	sim_path_put(&nd);
 
 	return 0;
 }
@@ -399,11 +413,11 @@ static int generic_cli_softlink(struct md_private *cli, const char *name,
 	new = lookup_create(&nd, 0);
 	retval = PTR_ERR(new);
 	if (!IS_ERR(new)) {
-		retval = vfs_symlink(nd.dentry->d_inode, new, name, S_IALLUGO);
+		retval = sim_vfs_symlink(sim_nd_dentry(nd)->d_inode, new, name, S_IALLUGO);
 		dput(new);
 	}
-	mutex_unlock(&nd.dentry->d_inode->i_mutex); // lookup_create
-	path_release(&nd);
+	mutex_unlock(&sim_nd_dentry(nd)->d_inode->i_mutex); // lookup_create
+	sim_path_put(&nd);
 
 	DPRINT("softlink return %d\n", retval);
 	return retval;
@@ -421,7 +435,7 @@ static int generic_cli_hardlink(struct md_private *cli, const char *name,
 	if (retval)
 		return retval;
 
-	old = lookup_one_len(nd.last.name, nd.dentry, strlen(nd.last.name));
+	old = lookup_one_len(nd.last.name, sim_nd_dentry(nd), strlen(nd.last.name));
 	if (IS_ERR(old)) {
 		retval = PTR_ERR(old);
 		goto exit1;
@@ -430,14 +444,14 @@ static int generic_cli_hardlink(struct md_private *cli, const char *name,
 	new = lookup_create(&nd, 0);
 	retval = PTR_ERR(new);
 	if (!IS_ERR(new)) {
-		retval = vfs_link(old, nd.dentry->d_inode, new);
+		retval = vfs_link(old, sim_nd_dentry(nd)->d_inode, new);
 		dput(new);
 	}
-	mutex_unlock(&nd.dentry->d_inode->i_mutex); // lookup_create
+	mutex_unlock(&sim_nd_dentry(nd)->d_inode->i_mutex); // lookup_create
 	dput(old);
 exit1:
 	DPRINT("hardlink return %d\n", retval);
-	path_release(&nd);
+	sim_path_put(&nd);
 	return retval;
 }
 
@@ -449,7 +463,7 @@ static int generic_cli_readlink(struct md_private *cli, const char *linkname)
 	retval = path_lookup(linkname, LOOKUP_FOLLOW, &nd);
 	if (retval)
 		return retval;
-	path_release(&nd);
+	sim_path_put(&nd);
 
 	DPRINT("readlink %d\n", retval);
 	return retval;
@@ -473,14 +487,14 @@ static int generic_cli_rename(struct md_private *cli, const char *oldname,
 	if (retval)
 		goto exit1;
 
-	p = lock_rename(ndold.dentry, ndnew.dentry);
-	old = lookup_one_len(ndold.last.name, ndold.dentry, strlen(ndold.last.name));
+	p = lock_rename(sim_nd_dentry(ndold), sim_nd_dentry(ndnew));
+	old = lookup_one_len(ndold.last.name, sim_nd_dentry(ndold), strlen(ndold.last.name));
 	if (IS_ERR(old)) {
 		retval = PTR_ERR(old);
 		goto exit2;
 	}
 
-	new = lookup_one_len(ndnew.last.name, ndnew.dentry, strlen(ndnew.last.name));
+	new = lookup_one_len(ndnew.last.name, sim_nd_dentry(ndnew), strlen(ndnew.last.name));
 	if (IS_ERR(new)) {
 		retval = PTR_ERR(new);
 		goto exit3;
@@ -490,17 +504,17 @@ static int generic_cli_rename(struct md_private *cli, const char *oldname,
 		goto exit4;
 	}
 
-	retval = vfs_rename(ndold.dentry->d_inode, old,
-			    ndnew.dentry->d_inode, new);
+	retval = vfs_rename(sim_nd_dentry(ndold)->d_inode, old,
+			    sim_nd_dentry(ndnew)->d_inode, new);
 exit4:
 	dput(new);
 exit3:
 	dput(old);
 exit2:
-	unlock_rename(ndold.dentry, ndnew.dentry);
-	path_release(&ndnew);
+	unlock_rename(sim_nd_dentry(ndold), sim_nd_dentry(ndnew));
+	sim_path_put(&ndnew);
 exit1:
-	path_release(&ndold);
+	sim_path_put(&ndold);
 	return retval;
 }
 
