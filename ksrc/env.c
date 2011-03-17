@@ -117,15 +117,20 @@ static int env_stat_to_user(uint32_t id, struct op_time_stat *orig,
 
 
 static int env_result_to_user(struct simul_env *env, uint32_t __user *res,
-			      uint32_t __user *ip,
+			      uint32_t __user *ip, uint64_t __user *total_time,
 			      struct simul_stat_op __user *data)
 {
 	int i;
+	uint64_t time;
 
 	if (copy_to_user(ip, &env->se_vm->sv_ip, sizeof(*ip)))
 		return -EFAULT;
 
 	if (copy_to_user(res, &env->se_vm->sv_rc, sizeof(*res)))
+		return -EFAULT;
+
+        time = timespec_to_ns(&env->se_vm->sv_time) / NSEC_PER_USEC;
+	if (copy_to_user(total_time, &time, sizeof(*total_time)))
 		return -EFAULT;
 
 	for (i = 0; i < env->se_stat_tn; i++)
@@ -136,13 +141,14 @@ static int env_result_to_user(struct simul_env *env, uint32_t __user *res,
 }
 
 int env_results_get(uint32_t id, uint32_t __user *res, uint32_t __user *ip,
+                    uint64_t __user *time, 
 		    struct simul_stat_op __user *data)
 {
 	struct simul_env *pos;
 
 	list_for_each_entry(pos, &clients, se_link) {
 		if (pos->se_id == id) {
-			return env_result_to_user(pos, res, ip, data);
+			return env_result_to_user(pos, res, ip, time, data);
 		}
 	}
 

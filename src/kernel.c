@@ -73,7 +73,8 @@ int simul_api_wait_finished()
 }
 
 int simul_api_get_results(uint32_t id, uint32_t *res, uint32_t *ip,
-		     struct simul_stat_op *data)
+                          uint64_t *time,
+		          struct simul_stat_op *data)
 {
 	struct simul_ioctl_res _res;
 	if (api_fd == -1)
@@ -81,6 +82,7 @@ int simul_api_get_results(uint32_t id, uint32_t *res, uint32_t *ip,
 
 	_res.ss_cli = id;
 	_res.ss_res = res;
+	_res.ss_time = time;
 	_res.ss_ip = ip;
 	_res.ss_stats = data;
 

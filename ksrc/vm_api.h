@@ -2,6 +2,7 @@
 #define _STACK_VM_API_H_
 
 #include <linux/types.h>
+#include <linux/time.h>
 
 struct fifo;
 struct simul_env;
@@ -53,6 +54,7 @@ struct stack_vm {
 	struct simul_env *sv_env;
 	long		sv_run:1;
 	int		sv_rc;
+	struct timespec	sv_time;
 };
 
 /* vm_main.c */

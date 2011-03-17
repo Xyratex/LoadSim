@@ -64,6 +64,7 @@ int env_count(void);
  get results
  */
 int env_results_get(uint32_t id, uint32_t __user *res, uint32_t __user *ip,
+                    uint64_t __user *total_time,
 		     struct simul_stat_op __user *data);
 
 #endif

@@ -66,6 +66,10 @@ struct md_client {
 	 */
 	uint32_t		mdc_op;
 	/**
+	 time of total execution for given program
+	*/
+	uint64_t		mdc_time;
+	/**
 	*/
 	uint32_t		mdc_stats_num;
 	struct simul_stat_op	*mdc_stats;

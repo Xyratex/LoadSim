@@ -6,6 +6,7 @@
 #include <linux/bitops.h>
 #include <linux/random.h>
 
+#include "compat.h"
 #include "kdebug.h"
 #include "fifo.h"
 #include "vm_defs.h"

@@ -110,7 +110,7 @@ COLIBRI_LINUX_TRY_COMPILE([
 ],[
 	struct inode *dir;
 	struct dentry *dentry;
-	const char *oldname = NULL;
+	const char *oldname = (void *)0;
 	int mode = 0;
 
 	vfs_symlink(dir, dentry, oldname, mode);
@@ -126,10 +126,12 @@ COLIBRI_LINUX_TRY_COMPILE([
 AC_DEFUN([SIM_VFS_ALTROOT],
 [AC_MSG_CHECKING([kernel has support for alroot])
 COLIBRI_LINUX_TRY_COMPILE([
+        #include <asm/atomic.h>
+        #include <linux/spinlock.h>
 	#include <linux/fs_struct.h>
 ],[
 	struct fs_struct *old;
-	old->altroot = NULL;
+	old->altroot = (void *)0;
 ],[
         AC_MSG_RESULT(yes)
         AC_DEFINE(HAVE_VFS_ALTROOT, ,
@@ -165,8 +167,8 @@ AC_MSG_CHECKING([if kernel has struct cred])
 COLIBRI_LINUX_TRY_COMPILE([
        #include <linux/sched.h>
 ],[
-       struct task_struct *tsk = NULL;
-       tsk->real_cred = NULL;
+       struct task_struct *tsk = (void *)0;
+       tsk->real_cred = (void *)0;
 ],[
        AC_MSG_RESULT([yes])
        AC_DEFINE(HAVE_STRUCT_CRED, 1, [struct cred found])

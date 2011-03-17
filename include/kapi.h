@@ -69,6 +69,7 @@ struct simul_ioctl_res {
 	uint32_t		ss_cli;
 	uint32_t		*ss_res;
 	uint32_t		*ss_ip;
+	uint64_t		*ss_time; /** < time to execute program in ms */
 	struct simul_stat_op __user *ss_stats; /** < fill by kernel */
 };
 #endif

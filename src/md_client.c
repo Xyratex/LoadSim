@@ -189,7 +189,7 @@ int clients_get_stats(void)
 			continue;
 		}
 		simul_api_get_results(cli->mdc_id, &cli->mdc_rc, &cli->mdc_op,
-				      cli->mdc_stats);
+				      &cli->mdc_time, cli->mdc_stats);
 	}
 	return rc;
 }

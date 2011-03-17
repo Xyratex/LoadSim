@@ -9,8 +9,10 @@
 void client_res(struct md_client *cli)
 {
 	int i = 0;
-	printf("cli %s : last op %d total %d rc %d\n",
-	       cli->mdc_name, cli->mdc_op, cli->mdc_prg->vmp_enc_idx, cli->mdc_rc);
+	printf("cli %s : last op %d total ops %d total time %lu(ms) rc %d\n",
+	       cli->mdc_name, cli->mdc_op, cli->mdc_prg->vmp_enc_idx, 
+	       cli->mdc_time,
+	       cli->mdc_rc);
 
 	for(i=0; i<cli->mdc_stats_num; i++) {
 		printf("\t%s : %u/%u/%u\n", 

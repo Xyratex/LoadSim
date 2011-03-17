@@ -89,6 +89,7 @@ int vm_interpret_run(struct stack_vm *vm)
 	unsigned char op;
 	int rc = -ENODATA;
 	long old_ip;
+	struct timespec start = CURRENT_TIME;
 
 	vm->sv_run = 1;
 	while(vm->sv_ip < vm->sv_size) {
@@ -109,6 +110,8 @@ int vm_interpret_run(struct stack_vm *vm)
 			break;
 		}
 	}
+	vm->sv_time = timespec_sub(CURRENT_TIME, start);
+
 	if (rc == 0) {
 		long exit_rc;
 		rc = fifo_pop(vm->sv_stack, &exit_rc);

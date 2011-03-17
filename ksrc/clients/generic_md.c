@@ -316,10 +316,12 @@ static int generic_cli_setattr(const char *name, struct iattr *newattrs)
 	if (retval)
 		goto exit;
 
+#if 0
 	/* Remove suid/sgid if need */
 	suid = should_remove_suid(sim_nd_dentry(nd));
 	if (suid)
 		newattrs->ia_valid |= ATTR_FORCE | suid;
+#endif
 
 	mutex_lock(&sim_nd_dentry(nd)->d_inode->i_mutex);
 	retval = notify_change(sim_nd_dentry(nd), newattrs);

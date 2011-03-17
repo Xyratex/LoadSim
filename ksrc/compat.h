@@ -22,13 +22,13 @@
 
 #define sim_path_put(nd)     path_put(&(nd)->path)
 #else
-#define sim_nd_dentry(nd)    ((nd)->dentry)
-#define sim_nd_mnt(nd)       ((nd)->mnt)
+#define sim_nd_dentry(nd)    ((nd).dentry)
+#define sim_nd_mnt(nd)       ((nd).mnt)
 
 #define sim_fs_pwd(fs)       ((fs)->pwd)
 #define sim_fs_pwdmnt(fs)    ((fs)->pwdmnt)
-#define sim_fs_pwd(fs)       ((fs)->root)
-#define sim_fs_pwdmnt(fs)    ((fs)->rootmnt)
+#define sim_fs_root(fs)       ((fs)->root)
+#define sim_fs_rootmnt(fs)    ((fs)->rootmnt)
 
 #define sim_path_put(nd)     path_release(nd)
 #endif

@@ -90,7 +90,8 @@ int results_get(struct simul_ioctl_res __user *data)
 	if (copy_from_user(&_data, data, sizeof(_data)))
 		return -EFAULT;
 
-	return env_results_get(_data.ss_cli, _data.ss_res, _data.ss_ip, _data.ss_stats);
+	return env_results_get(_data.ss_cli, _data.ss_res, _data.ss_ip, 
+                               _data.ss_time, _data.ss_stats);
 }
 
 static int simul_ioctl(struct inode *inode, struct file *file,
