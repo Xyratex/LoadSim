@@ -220,8 +220,27 @@ AC_DEFUN([SIM_KERNEL], [
 
 ])
 
+# flex 2.6.35 broke documentaion and 
+# need to submit --noreentrant
+# flag
+AC_DEFUN([SIM_LEX_FLAGS], [
+LEX_FL=""
+#check noreentrant support
+lex_ver=`$LEX -V`
+case "$lex_ver" in
+    *2.5.35)
+        LEX_FL="$FLEX_FL --noreentrant"
+    ;;
+    *)
+    ;;
+esac
+
+AC_SUBST(LEX_FL)
+])
+
 AC_DEFUN([SIM_USERLAND], [
 	AC_PROG_LEX
+	SIM_LEX_FLAGS
 	AC_PROG_YACC
 ])
 

@@ -3,14 +3,13 @@
 #include <string.h>
 #include "encode.h"
 
+
 void yyerror(const char *str);
 
 %}
 
 /* Location tracking.  */
 %locations
-/* Pure yylex.  */
-%define "api.pure"
 
 %union {
 	char *strval;
