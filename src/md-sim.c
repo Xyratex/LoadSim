@@ -147,8 +147,8 @@ int main(int argc, char *argv[])
 	}
 
 	while (1) {
-		option_index = 0;
-		c = getopt_long(argc, argv, "",
+		option_index = -1;
+		c = getopt_long(argc, argv, "hc:l:",
 			long_options, &option_index);
 		if (c == -1)
 			break;
