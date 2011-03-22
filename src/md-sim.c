@@ -1,5 +1,8 @@
 #include "stdio.h"
 #include "stdlib.h"
+#include "errno.h"
+#define _GNU_SOURCE
+#include "getopt.h"
 
 #include "md_client.h"
 #include "vm_compile.h"
@@ -82,13 +85,13 @@ void client_res(ezxml_t root, struct md_client *cli)
 	}
 }
 
-
-void client_stats(void)
+void client_stats(char *name)
 {
 	ezxml_t root;
 	ezxml_t xml;
 	struct md_client *cli;
 	char *s;
+	FILE *out;
 
 	root = ezxml_new("mdsimstats");
 	xml_add_num(root, "numclients", 0);
@@ -101,19 +104,72 @@ void client_stats(void)
 			fprintf(stderr, "can't create a new client\n");
 		}
 	}
-	s = ezxml_toxml(root);
-	fprintf(stdout, "%s\n", s);
-	free(s);
+
+	out = name ? fopen(name, "w") : stdout;
+	if (out) {
+		s = ezxml_toxml(root);
+		if (s)
+			fprintf(out, "%s\n", s);
+		free(s);
+		fclose(out);
+	}
 }
+
+void usage(void)
+{
+	fprintf(stderr, "mdsim usage info \n");
+	fprintf(stderr, "\n");
+	fprintf(stderr, "-h | --help print that help\n");	
+	fprintf(stderr, "-c | --config <name> use <name> as test configuration file, use stdin if not specified\n");
+	fprintf(stderr, "-l | --log <name> if specificed store xml output at that file, use stdout if not specified \n");
+	fprintf(stderr, "\n");	
+}
+
+extern FILE *yyin;
 
 int main(int argc, char *argv[])
 {
+	int  option_index = 0;
+	static struct option long_options[] = {
+		{"config", 1, 0, 'c'},
+		{"log", 1, 0, 'l'},
+		{"help",0, 0, 'h'},
+		{0, 0, 0, 0}
+	};
+	int c;
 	int rc;
+	char *log = NULL;
 
 	rc = simul_api_open();
 	if (rc < 0) {
 		err_print("can't open kernel interface\n");
 		return 1;
+	}
+
+	while (1) {
+		option_index = 0;
+		c = getopt_long(argc, argv, "",
+			long_options, &option_index);
+		if (c == -1)
+			break;
+
+		if ((option_index == 0) || (c == 'c')) {
+			yyin = fopen(optarg, "r");
+			if (yyin == NULL) {
+				rc = errno;
+				fprintf(stderr, "can't open config file. "
+					"rc = %d\n", rc);
+				exit(1);
+			}
+		} else if ((option_index == 1) || (c == 'l')) {
+			log = strdup(optarg);
+		} else if ((option_index == 2) || (c == 'h')) {
+		        usage();
+		        exit(0);
+		} else {
+			fprintf(stderr, "unknow opt \n");
+			exit(2);
+		}
 	}
 
 	rc = yyparse();
@@ -130,5 +186,7 @@ int main(int argc, char *argv[])
 
 	simul_api_close();
 
-	client_stats();
+	client_stats(log);
+	if (log)
+		free(log);
 }
