@@ -1,356 +1,70 @@
-#include <errno.h>
-#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
 
 #include "encode.h"
-#include "vm_defs.h"
-#include "vm_compile.h"
 
 /**
- convert test language commands into VM code
+ abstract syntax tree node 
 */
+struct ast_node {
+	enum vm_cmd      an_cmd;   /** < VM command */
+	enum ast_type    an_type;  /** < node type */
+	int              an_line;  /** < line for syntax node */
+	union cmd_arg    an_local; /** < local argument (like call number 
+				    or pointer to string) if need */
+	unsigned int     an_nargs; /** < number of child expressions */
+	struct ast_node *an_arg[0]; /** child expressions */
+};
 
-/**
- cd := push "name"; call cd;
- */
-int encode_cd(struct vm_program *vprg, char *dir)
+int ast_check_type(struct ast_node *arg, enum ast_type type)
 {
-	int ret;
-	union cmd_arg arg;
-
-	arg.cd_string = dir;
-	ret = vm_encode(vprg, VM_CMD_PUSHS, arg);
-	if (ret)
-		return ret;
-
-	arg.cd_call = VM_MD_CALL_CD;
-	return vm_encode(vprg, VM_CMD_CALL, arg);
+	if(type == AST_REGISTER || arg->an_type == AST_REGISTER ||
+	       arg->an_type == type)
+		return 1;
+	else
+		return 0;
 }
 
-int encode_mkdir(struct vm_program *vprg, char *dir, int mode)
+struct ast_node *ast_op(int line, enum vm_cmd cmd, union cmd_arg local, enum ast_type type, int nchilds, ...)
 {
-	int ret;
-	union cmd_arg arg;
+	struct ast_node *node;
+	int i;
+	int size;
+	va_list ap;
 
-	arg.cd_string = dir;
-	ret = vm_encode(vprg, VM_CMD_PUSHS, arg);
-	if (ret)
-		return ret;
+	size = sizeof(*node) + sizeof(node->an_arg[0])*nchilds;
+	node = malloc(size);
+	if (node) {
+		memset(node, 0, size);
+		node->an_line = line;
+		node->an_cmd = cmd;
+		node->an_type = type;
+		node->an_local = local;
 
-	arg.cd_long = mode;
-	ret = vm_encode(vprg, VM_CMD_PUSHL, arg);
-	if (ret)
-		return ret;
+		node->an_nargs = nchilds;
+		va_start(ap, nchilds);
+		for(i = 0; i < nchilds; i++)
+			node->an_arg[i] = va_arg(ap, struct ast_node *);
+		va_end(ap);
+	}
 
-	arg.cd_call = VM_MD_CALL_MKDIR;
-	return vm_encode(vprg, VM_CMD_CALL, arg);
+	printf("add op %d - %d = %p\n", cmd, type, node);
+	return node;
 }
 
-int encode_readdir(struct vm_program *vprg, char *dir)
+int ast_encode(struct vm_program *vprg, struct ast_node *root)
 {
-	int ret;
-	union cmd_arg arg;
+	int i;
 
-	arg.cd_string = dir;
-	ret = vm_encode(vprg, VM_CMD_PUSHS, arg);
-	if (ret)
-		return ret;
+	printf("start encode %p\n", root);
+	for(i = 0; i < root->an_nargs; i++)
+		ast_encode(vprg, root->an_arg[i]);
 
-	arg.cd_call = VM_MD_CALL_READIR;
-	return vm_encode(vprg, VM_CMD_CALL, arg);
+	vm_encode(vprg, root->an_line, root->an_cmd, root->an_local);
 }
 
-int encode_unlink(struct vm_program *vprg, char *name)
-{
-	int ret;
-	union cmd_arg arg;
-
-	arg.cd_string = name;
-	ret = vm_encode(vprg, VM_CMD_PUSHS, arg);
-	if (ret)
-		return ret;
-
-	arg.cd_call = VM_MD_CALL_UNLINK;
-	return vm_encode(vprg, VM_CMD_CALL, arg);
-}
-
-/**
- pushl reg
- pushl flags
- pushs name
- call [open]
- */
-int encode_open(struct vm_program *vprg, char *name, int flags, int mode, int reg)
-{
-	int ret;
-	union cmd_arg arg;
-
-	arg.cd_long = reg;
-	ret = vm_encode(vprg, VM_CMD_PUSHL, arg);
-	if (ret)
-		return ret;
-
-	arg.cd_long = mode;
-	ret = vm_encode(vprg, VM_CMD_PUSHL, arg);
-	if (ret)
-		return ret;
-
-	arg.cd_long = flags;
-	ret = vm_encode(vprg, VM_CMD_PUSHL, arg);
-	if (ret)
-		return ret;
-
-	arg.cd_string = name;
-	ret = vm_encode(vprg, VM_CMD_PUSHS, arg);
-	if (ret)
-		return ret;
-
-	arg.cd_call = VM_MD_CALL_OPEN;
-	return vm_encode(vprg, VM_CMD_CALL, arg);
-}
-
-int encode_close(struct vm_program *vprg, int reg)
-{
-	int ret;
-	union cmd_arg arg;
-
-	arg.cd_long = reg;
-	ret = vm_encode(vprg, VM_CMD_PUSHL, arg);
-	if (ret)
-		return ret;
-
-	arg.cd_call = VM_MD_CALL_CLOSE;
-	return vm_encode(vprg, VM_CMD_CALL, arg);
-}
-
-int encode_stat(struct vm_program *vprg, char *name)
-{
-	int ret;
-	union cmd_arg arg;
-
-	arg.cd_string = name;
-	ret = vm_encode(vprg, VM_CMD_PUSHS, arg);
-	if (ret)
-		return ret;
-
-	arg.cd_call = VM_MD_CALL_STAT;
-	return vm_encode(vprg, VM_CMD_CALL, arg);
-}
-
-int encode_chown(struct vm_program *vprg, char *name, int uid, int gid)
-{
-	int ret;
-	union cmd_arg arg;
-
-	arg.cd_string = name;
-	ret = vm_encode(vprg, VM_CMD_PUSHS, arg);
-	if (ret)
-		return ret;
-
-	arg.cd_long = uid;
-	ret = vm_encode(vprg, VM_CMD_PUSHL, arg);
-	if (ret)
-		return ret;
-
-	arg.cd_long = gid;
-	ret = vm_encode(vprg, VM_CMD_PUSHL, arg);
-	if (ret)
-		return ret;
-
-	arg.cd_call = VM_MD_CALL_CHOWN;
-	return vm_encode(vprg, VM_CMD_CALL, arg);
-}
-
-int encode_chmod(struct vm_program *vprg, char *name, int flags)
-{
-	int ret;
-	union cmd_arg arg;
-
-	arg.cd_string = name;
-	ret = vm_encode(vprg, VM_CMD_PUSHS, arg);
-	if (ret)
-		return ret;
-
-	arg.cd_long = flags;
-	ret = vm_encode(vprg, VM_CMD_PUSHL, arg);
-	if (ret)
-		return ret;
-
-	arg.cd_call = VM_MD_CALL_CHMOD;
-	return vm_encode(vprg, VM_CMD_CALL, arg);
-}
-
-int encode_chtime(struct vm_program *vprg, char *name, int flags)
-{
-	int ret;
-	union cmd_arg arg;
-
-	arg.cd_string = name;
-	ret = vm_encode(vprg, VM_CMD_PUSHS, arg);
-	if (ret)
-		return ret;
-
-	arg.cd_long = flags;
-	ret = vm_encode(vprg, VM_CMD_PUSHL, arg);
-	if (ret)
-		return ret;
-
-	arg.cd_call = VM_MD_CALL_CHTIME;
-	return vm_encode(vprg, VM_CMD_CALL, arg);
-}
-
-int encode_truncate(struct vm_program *vprg, char *name, int flags)
-{
-	int ret;
-	union cmd_arg arg;
-
-	arg.cd_string = name;
-	ret = vm_encode(vprg, VM_CMD_PUSHS, arg);
-	if (ret)
-		return ret;
-
-	arg.cd_long = flags;
-	ret = vm_encode(vprg, VM_CMD_PUSHL, arg);
-	if (ret)
-		return ret;
-
-	arg.cd_call = VM_MD_CALL_TRUNCATE;
-	return vm_encode(vprg, VM_CMD_CALL, arg);
-}
-
-int encode_softlink(struct vm_program *vprg, char *old, char *new)
-{
-	int ret;
-	union cmd_arg arg;
-
-	arg.cd_string = old;
-	ret = vm_encode(vprg, VM_CMD_PUSHS, arg);
-	if (ret)
-		return ret;
-
-	arg.cd_string = new;
-	ret = vm_encode(vprg, VM_CMD_PUSHS, arg);
-	if (ret)
-		return ret;
-
-	arg.cd_call = VM_MD_CALL_SOFTLINK;
-	return vm_encode(vprg, VM_CMD_CALL, arg);
-}
-
-int encode_hardlink(struct vm_program *vprg, char *old, char *new)
-{
-	int ret;
-	union cmd_arg arg;
-
-	arg.cd_string = old;
-	ret = vm_encode(vprg, VM_CMD_PUSHS, arg);
-	if (ret)
-		return ret;
-
-	arg.cd_string = new;
-	ret = vm_encode(vprg, VM_CMD_PUSHS, arg);
-	if (ret)
-		return ret;
-
-	arg.cd_call = VM_MD_CALL_HARDLINK;
-	return vm_encode(vprg, VM_CMD_CALL, arg);
-}
-
-int encode_readlink(struct vm_program *vprg,char *name)
-{
-	int ret;
-	union cmd_arg arg;
-
-	arg.cd_string = name;
-	ret = vm_encode(vprg, VM_CMD_PUSHS, arg);
-	if (ret)
-		return ret;
-
-	arg.cd_call = VM_MD_CALL_READLINK;
-	return vm_encode(vprg, VM_CMD_CALL, arg);
-}
-
-int encode_rename(struct vm_program *vprg, char *oldname, char *newname)
-{
-	int ret;
-	union cmd_arg arg;
-
-	arg.cd_string = newname;
-	ret = vm_encode(vprg, VM_CMD_PUSHS, arg);
-	if (ret)
-		return ret;
-
-	arg.cd_string = oldname;
-	ret = vm_encode(vprg, VM_CMD_PUSHS, arg);
-	if (ret)
-		return ret;
-
-	arg.cd_call = VM_MD_CALL_RENAME;
-	return vm_encode(vprg, VM_CMD_CALL, arg);
-
-}
-
-/** **/
-int encode_user(struct vm_program *vprg, int uid)
-{
-	int ret;
-	union cmd_arg arg;
-
-	arg.cd_long = uid;
-	ret = vm_encode(vprg, VM_CMD_PUSHL, arg);
-	if (ret)
-		return ret;
-
-	arg.cd_call = VM_SYS_USER;
-	return vm_encode(vprg, VM_CMD_CALL, arg);
-
-}
-
-int encode_group(struct vm_program *vprg, int gid)
-{
-	int ret;
-	union cmd_arg arg;
-
-	arg.cd_long = gid;
-	ret = vm_encode(vprg, VM_CMD_PUSHL, arg);
-	if (ret)
-		return ret;
-
-	arg.cd_call = VM_SYS_GROUP;
-	return vm_encode(vprg, VM_CMD_CALL, arg);
-}
-
-int encode_sleep(struct vm_program *vprg, int ms)
-{
-	int ret;
-	union cmd_arg arg;
-
-	arg.cd_long = ms;
-	ret = vm_encode(vprg, VM_CMD_PUSHL, arg);
-	if (ret)
-		return ret;
-
-	arg.cd_call = VM_SYS_SLEEP;
-	return vm_encode(vprg, VM_CMD_CALL, arg);
-}
-
-int encode_race(struct vm_program *vprg, int raceid)
-{
-	int ret;
-	union cmd_arg arg;
-
-	if (raceid > VM_MAX_RACES)
-		return -EINVAL;
-
-	arg.cd_long = raceid;
-	ret = vm_encode(vprg, VM_CMD_PUSHL, arg);
-	if (ret)
-		return ret;
-
-	arg.cd_call = VM_SYS_RACE;
-	return vm_encode(vprg, VM_CMD_CALL, arg);
-}
-
-
+#if 0
 /****/
 #define LOOP_ST_LABEL "loop_st%u:"
 #define LOOP_END_LABEL "loop_end%u:"
@@ -362,16 +76,11 @@ loop_st:
  dup 
  jz loop_end;
  */
-int encode_loop_start(struct vm_program *vprg, int num)
+int encode_loop_start(struct vm_program *vprg)
 {
 	int ret;
 	char label[20];
 	union cmd_arg arg;
-
-	arg.cd_long = num;
-	ret = vm_encode(vprg, VM_CMD_PUSHL, arg);
-	if (ret)
-		return ret;
 
 	snprintf(label, sizeof label, LOOP_ST_LABEL, loop_no);
 	ret = vm_label_resolve(vprg, label);
@@ -511,6 +220,7 @@ int encode_make_workdir(struct vm_program *vprg, int mode)
 
 	return 0;
 }
+#endif
 
 
 /******************/
@@ -537,6 +247,7 @@ struct vm_program *procedure_current(void)
 int procedure_end(void)
 {
 	int ret;
+#if 0
 	union cmd_arg arg;
 
 	/* program return code if finished ok */
@@ -544,7 +255,7 @@ int procedure_end(void)
 	ret = vm_encode(vprg, VM_CMD_PUSHL, arg);
 	if (ret)
 		return ret;
-
+#endif
 	ret = vm_label_resolve(vprg, END_LABEL);
 	if (ret)
 		return ret;

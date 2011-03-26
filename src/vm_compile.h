@@ -125,10 +125,11 @@ union cmd_arg {
  need to adjust vmp_end_idx to point to byte after command.
  
  @param vprg - program to add operation.
+ @param line - line of original program to debug info
  @param cmd - command
  @param data - command arguments
  */
-int vm_encode(struct vm_program *vprg, enum vm_cmd cmd, union cmd_arg data);
+int vm_encode(struct vm_program *vprg, int line, enum vm_cmd cmd, union cmd_arg data);
 
 /**
  add label to the list and fix all jump point to using correct address.

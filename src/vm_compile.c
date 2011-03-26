@@ -355,9 +355,18 @@ static int enc_dup(struct vm_program *vprg, union cmd_arg data)
 	return 0;
 }
 
+static int enc_up(struct vm_program *vprg, union cmd_arg data)
+{
+	DPRINT("up\n");
+	return 0;
+}
+
 static int enc_nop(struct vm_program *vprg, union cmd_arg data)
 {
 	DPRINT("nop\n");
+
+	/* kill nop from commands */
+	vprg->vmp_enc_idx --;
 	return 0;
 }
 
@@ -373,10 +382,11 @@ const static enc_h_t en_helpers[VM_CMD_MAX] = {
 	[VM_CMD_ADD]	= enc_add,
 	[VM_CMD_SUB]	= enc_sub,
 	[VM_CMD_DUP]	= enc_dup,
+	[VM_CMD_UP]	= enc_up,
 	[VM_CMD_NOP]	= enc_nop,
 };
 
-int vm_encode(struct vm_program *vprg, enum vm_cmd cmd, union cmd_arg data)
+int vm_encode(struct vm_program *vprg, int line, enum vm_cmd cmd, union cmd_arg data)
 {
 	int rc;
 

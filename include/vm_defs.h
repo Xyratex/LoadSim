@@ -54,7 +54,9 @@ enum vm_cmd {
 	/* duplicate data on stack top */
 	VM_CMD_DUP	= 10,
 	/* just remove entry on stack top */
-	VM_CMD_NOP	= 11,
+	VM_CMD_UP	= 11,
+	/* link in AST tree */
+	VM_CMD_NOP	= 12,
 	VM_CMD_MAX,
 };
 

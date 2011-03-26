@@ -92,7 +92,7 @@ int client_create(char *name, char *program)
 int get_range(char *prefix, int *start, int *end)
 {
 	char *r_start;
-	char *r_end; 
+	char *r_end;
 	char *err;
 	long st;
 	long en;

@@ -14,6 +14,7 @@ void yyerror(const char *str);
 %union {
 	char *strval;
 	int   intval;
+	struct ast_node *node;
 }
 
 %token <strval> QSTRING TOK_IP TOK_ID TOK_NID
@@ -37,12 +38,27 @@ void yyerror(const char *str);
 
 %token TOK_SERVER TOK_CLIENT
 
-%type<intval> expected open_flags
+%type<intval> calc_o_flags
+
+%type<node> proc_body proc_commands 
+%type<node> ops open_flags
+
+%type<node> loop loop_body
+
+%type<node> md_ops misc_ops md_cmd
+%type<node> cd_cmd mkdir_cmd readdir_cmd unlink_cmd open_cmd
+%type<node> close_cmd stat_cmd setattr_cmd mksln_cmd mkhln_cmd
+%type<node> chmod_cmd chown_cmd chtime_cmd truncate_cmd
+%type<node> readln_cmd rename_cmd
+
+%type<node> wait_race sleep chuid chgid mkwd
+
 
 %left	'|'
 
 %%
 main_commands:
+	/* empty */
 	| main_commands main_command
 	;
 
@@ -112,6 +128,13 @@ client_set:
 */
 procedure:
 	proc_begin proc_body proc_end
+	{
+		int ret;
+
+		ret = ast_encode(procedure_current(), $2);
+		if (ret)
+			YYABORT;
+	}
 	;
 
 proc_begin:
@@ -138,7 +161,16 @@ proc_end:
 	;
 
 proc_body:
+	proc_commands
 	| proc_body proc_commands
+	{
+		union cmd_arg arg;
+		arg.cd_long = 0;
+
+		$$ = ast_op(yylloc.first_line, VM_CMD_NOP, arg, AST_TYPE_NONE, 1, $1);
+		if($$ == NULL)
+			YYABORT;
+	}
 	;
 
 /**
@@ -151,6 +183,9 @@ proc_commands:
 	  md_ops
 	| misc_ops
 	| loop
+	{
+		$$ = $1;
+	}
 	;
 
 
@@ -165,27 +200,28 @@ proc_commands:
 */
 loop:
 	loop_begin loop_body loop_end
+	{
+		$$ = $2;
+	}
 	;
 
 loop_begin:
 	TOK_LOOP_BEGIN TOK_NUMBER
 	{
-		int ret;
-
-		ret = encode_loop_start(procedure_current(), $2);
-		if (ret)
-			YYABORT;
 	}
 	;
 
 loop_body:
-	| proc_commands loop_body 
+	proc_commands
+	| loop_body proc_commands
+	{
+		$$ = $2;
+	}
 	;
 
 loop_end:
 	TOK_LOOP_END 
 	{
-		encode_loop_end(procedure_current());
 	}
 	;
 
@@ -201,6 +237,9 @@ misc_ops:
 	| chuid
 	| chgid
 	| mkwd
+	{
+		$$ = $1;
+	}
 	;
 
 /**
@@ -212,11 +251,6 @@ misc_ops:
 wait_race:
 	TOK_WAITRACE_CMD TOK_NUMBER
 	{
-		int ret;
-
-		ret = encode_race(procedure_current(), $2);
-		if (ret)
-			YYABORT;
 	}
 	;
 
@@ -229,46 +263,26 @@ wait_race:
 sleep:
 	TOK_SLEEP_CMD TOK_NUMBER
 	{
-		int ret;
-
-		ret = encode_sleep(procedure_current(), $2);
-		if (ret)
-			YYABORT;
 	}
 	;
 
 chuid:
 	TOK_UID_CMD TOK_NUMBER
 	{
-		int ret;
-
-		ret = encode_user(procedure_current(), $2);
-		if (ret)
-			YYABORT;
 	}
 	;
 
 chgid:
 	TOK_GID_CMD TOK_NUMBER
 	{
-		int ret;
-
-		ret = encode_group(procedure_current(), $2);
-		if (ret)
-			YYABORT;
 	}
 	;
 
 mkwd:
 	TOK_MKWD TOK_NUMBER
 	{
-		int ret;
-
-		ret = encode_make_workdir(procedure_current(), $2);
-		if (ret)
-			YYABORT;
 	}
-
+	;
 /**
  format of metadata operating
  
@@ -283,7 +297,10 @@ mkwd:
  and error code returned to application.
  */
 md_ops:
-	md_cmd expected
+	md_cmd
+	{
+		$$ = $1;
+	}
 	;
 
 /**
@@ -311,6 +328,9 @@ md_cmd:
 	| mkhln_cmd
 	| readln_cmd
 	| rename_cmd
+	{
+		$$ = $1;
+	}
 	;
 
 /**
@@ -323,17 +343,26 @@ md_cmd:
    mode is
  */
 mkdir_cmd:
-	TOK_MKDIR_CMD QSTRING TOK_NUMBER
+	TOK_MKDIR_CMD ops ops
 	{
 		int ret;
-
-		ret = encode_mkdir(procedure_current(), $2, $3);
-		free($2);
-
-		if (ret)
+		struct ast_node *call;
+		union cmd_arg arg;
+	
+		ret = ast_check_type($2, AST_STRING);
+		ret += ast_check_type($3, AST_NUMBER);
+		if (ret == 2) {
+			arg.cd_call = VM_MD_CALL_MKDIR;
+			call = ast_op(yylloc.first_line,
+				      VM_CMD_CALL, arg, AST_NUMBER,
+				      2, $2, $3);
+		}
+		if ((ret < 2) || (call == NULL))
 			YYABORT;
-	}
 
+		$$ = call;
+	}
+	;
 /**
  change work directory
  format of operation
@@ -344,15 +373,22 @@ mkdir_cmd:
    "name" is quoted name of directory
  */
 cd_cmd:
-	TOK_CD_CMD QSTRING
+	TOK_CD_CMD ops
 	{
 		int ret;
-
-		ret = encode_cd(procedure_current(), $2);
-		free($2);
-
-		if (ret)
+		struct ast_node *call;
+		union cmd_arg arg;
+	
+		ret = ast_check_type($2, AST_STRING);
+		if (ret == 1) {
+			arg.cd_call = VM_MD_CALL_CD;
+			call = ast_op(yylloc.first_line,
+				      VM_CMD_CALL, arg, AST_NUMBER,
+				      1, $2);
+		}
+		if ((ret < 1) || (call == NULL))
 			YYABORT;
+		$$ = call;
 	}
 	;
 
@@ -361,16 +397,24 @@ cd_cmd:
  
  */
 readdir_cmd:
-	TOK_READDIR_CMD QSTRING
+	TOK_READDIR_CMD ops
 	{
 		int ret;
-
-		ret = encode_readdir(procedure_current(), $2);
-		free($2);
-
-		if (ret)
+		struct ast_node *call;
+		union cmd_arg arg;
+	
+		ret = ast_check_type($2, AST_STRING);
+		if (ret == 1) {
+			arg.cd_call = VM_MD_CALL_READIR;
+			call = ast_op(yylloc.first_line,
+				      VM_CMD_CALL, arg, AST_NUMBER,
+				      1, $2);
+		}
+		if ((ret < 1) || (call == NULL))
 			YYABORT;
+		$$ = call;
 	}
+	;
 
 /**
  remove file of directory
@@ -381,14 +425,22 @@ readdir_cmd:
    "name" is quoted name of directory
  */
 unlink_cmd:
-	TOK_UNLINK_CMD QSTRING
+	TOK_UNLINK_CMD ops
 	{
 		int ret;
-
-		ret = encode_unlink(procedure_current(), $2);
-		free($2);
-		if (ret)
+		struct ast_node *call;
+		union cmd_arg arg;
+	
+		ret = ast_check_type($2, AST_STRING);
+		if (ret == 1) {
+			arg.cd_call = VM_MD_CALL_UNLINK;
+			call = ast_op(yylloc.first_line,
+				      VM_CMD_CALL, arg, AST_NUMBER,
+				      1, $2);
+		}
+		if ((ret < 1) || (call == NULL))
 			YYABORT;
+		$$ = call;
 	}
 	;
 
@@ -405,21 +457,42 @@ unlink_cmd:
   regnum - index in registers file to store file handle
  */
 open_cmd:
-	TOK_OPEN_CMD QSTRING open_flags TOK_NUMBER TOK_NUMBER
+	TOK_OPEN_CMD ops open_flags ops ops
 	{
 		int ret;
+		struct ast_node *call;
+		union cmd_arg arg;
 
-		ret = encode_open(procedure_current(), $2, $3, $4, $5);
-		free($2);
-		if (ret)
+		ret = ast_check_type($2, AST_STRING);
+		ret += ast_check_type($3, AST_NUMBER);
+		ret += ast_check_type($4, AST_NUMBER);
+		ret += ast_check_type($5, AST_NUMBER);
+		if (ret == 4) {
+			arg.cd_call = VM_MD_CALL_OPEN;
+			call = ast_op(yylloc.first_line,
+				      VM_CMD_CALL, arg, AST_NUMBER,
+				      4, $2, $3, $4, $5);
+		}
+		if ((ret < 4) || (call == NULL))
+			YYABORT;
+		$$ = call;
+	}
+	;
+
+open_flags:
+	calc_o_flags 
+	{
+		union cmd_arg arg; 
+		arg.cd_long = $1;
+		$$ = ast_op(yylloc.first_line, VM_CMD_PUSHL, arg, AST_NUMBER, 0);
+		if ($$ == NULL)
 			YYABORT;
 	}
 	;
 
-
-open_flags:
+calc_o_flags:
 	TOK_O_FLAG	{ $$ = $1; }
-	| open_flags '|' TOK_O_FLAG { $$ = $1 | $3; }
+	| calc_o_flags '|' TOK_O_FLAG { $$ = $1 | $3; }
 	;
 
 /**
@@ -432,13 +505,22 @@ open_flags:
  $regnum - index in register file where open store a file handle
 */ 
 close_cmd:
-	TOK_CLOSE_CMD TOK_NUMBER
+	TOK_CLOSE_CMD ops
 	{
 		int ret;
-
-		ret = encode_close(procedure_current(), $2);
-		if (ret)
+		struct ast_node *call;
+		union cmd_arg arg;
+	
+		ret = ast_check_type($2, AST_NUMBER);
+		if (ret == 1) {
+			arg.cd_call = VM_MD_CALL_CLOSE;
+			call = ast_op(yylloc.first_line,
+				      VM_CMD_CALL, arg, AST_NUMBER,
+				      1, $2);
+		}
+		if ((ret < 1) || (call == NULL))
 			YYABORT;
+		$$ = call;
 	}
 	;
 
@@ -452,14 +534,23 @@ close_cmd:
   "name" quoted file name
  */
 stat_cmd:
-	TOK_STAT_CMD QSTRING
+	TOK_STAT_CMD ops
 	{
 		int ret;
+		struct ast_node *call;
+		union cmd_arg arg;
 
-		ret = encode_stat(procedure_current(), $2);
-		free($2);
-		if (ret)
+		ret = ast_check_type($2, AST_STRING);
+		if (ret == 1) {
+			arg.cd_call = VM_MD_CALL_STAT;
+			call = ast_op(yylloc.first_line,
+				      VM_CMD_CALL, arg, AST_NUMBER,
+				      1, $2);
+		}
+		if ((ret < 1) || (call == NULL))
 			YYABORT;
+		$$ = call;
+
 	}
 	;
 
@@ -477,53 +568,32 @@ setattr_cmd:
 	| chown_cmd
 	| chtime_cmd
 	| truncate_cmd
+	{
+		$$ = $1;
+	}
 	;
 
 chmod_cmd:
 	TOK_CHMOD_CMD QSTRING TOK_NUMBER
 	{
-		int ret;
-
-		ret = encode_chmod(procedure_current(), $2, $3);
-		free($2);
-		if (ret)
-			YYABORT;
 	}
 	;
 
 chown_cmd:
 	TOK_CHOWN_CMD QSTRING TOK_NUMBER ':' TOK_NUMBER
 	{
-		int ret;
-
-		ret = encode_chown(procedure_current(), $2, $3, $5);
-		free($2);
-		if (ret)
-			YYABORT;
 	}
 	;
 
 chtime_cmd:
 	TOK_CHTIME_CMD QSTRING TOK_NUMBER
 	{
-		int ret;
-
-		ret = encode_chtime(procedure_current(), $2, $3);
-		free($2);
-		if (ret)
-			YYABORT;
 	}
 	;
 
 truncate_cmd:
 	TOK_TRUNCATE_CMD QSTRING TOK_NUMBER
 	{
-		int ret;
-
-		ret = encode_truncate(procedure_current(), $2, $3);
-		free($2);
-		if (ret)
-			YYABORT;
 	}
 	;
 
@@ -536,13 +606,6 @@ truncate_cmd:
 mksln_cmd:
 	TOK_SOFTLINK_CMD QSTRING QSTRING
 	{
-		int ret;
-
-		ret = encode_softlink(procedure_current(), $2, $3);
-		free($2);
-		free($3);
-		if (ret)
-			YYABORT;
 	}
 	;
 
@@ -555,13 +618,6 @@ mksln_cmd:
 mkhln_cmd:
 	TOK_HARDLINK_CMD QSTRING QSTRING
 	{
-		int ret;
-
-		ret = encode_hardlink(procedure_current(), $2, $3);
-		free($2);
-		free($3);
-		if (ret)
-			YYABORT;
 	}
 	;
 
@@ -574,39 +630,26 @@ mkhln_cmd:
 readln_cmd:
 	TOK_READLINK_CMD QSTRING
 	{
-		int ret;
-
-		ret = encode_readlink(procedure_current(), $2);
-		free($2);
-		if (ret)
-			YYABORT;
 	}
 	;
 
 rename_cmd:
 	TOK_RENAME QSTRING QSTRING
 	{
-		int ret;
-
-		ret = encode_rename(procedure_current(), $2, $3);
-		free($2);
-		free($3);
-		if (ret)
-			YYABORT;
-
-	}
-
-/**********************/
-expected:
-	TOK_EXPECTED TOK_EXP_STATUS
-	{
-		int ret;
-
-		ret = encode_expected(procedure_current(), $2);
-		if (ret)
-			YYABORT;
 	}
 	;
+
+ops:
+	QSTRING		{ union cmd_arg arg; 
+			arg.cd_string = $1; 
+			$$ = ast_op(yylloc.first_line, VM_CMD_PUSHS, arg, AST_STRING, 0); 
+			}
+	| TOK_NUMBER	{ union cmd_arg arg; 
+			arg.cd_long = $1;
+			$$ = ast_op(yylloc.first_line, VM_CMD_PUSHL, arg, AST_NUMBER, 0);
+			}
+	;
+
 %%
 
 extern char *yytext;
