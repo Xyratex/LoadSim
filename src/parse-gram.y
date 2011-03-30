@@ -18,7 +18,7 @@ void yyerror(const char *str);
 }
 
 %token <strval> QSTRING TOK_IP TOK_ID TOK_NID
-%token <intval> TOK_EXP_STATUS TOK_NUMBER TOK_O_FLAG
+%token <intval> TOK_EXP_STATUS TOK_NUMBER TOK_O_FLAG TOK_REGISTER
 
 %token TOK_UNLINK_CMD TOK_CD_CMD
 %token TOK_OPEN_CMD TOK_CLOSE_CMD
@@ -41,7 +41,7 @@ void yyerror(const char *str);
 %type<intval> calc_o_flags
 
 %type<node> proc_body proc_commands 
-%type<node> statements expression tmpname
+%type<node> statements expression var tmpname
 %type<node> open_flags
 
 %type<node> loop loop_body
@@ -185,6 +185,7 @@ proc_commands:
 	  md_ops
 	| misc_ops
 	| loop
+	| var
 	{
 		$$ = $1;
 	}
@@ -857,16 +858,41 @@ statements:
 expression:
 	QSTRING		{ union cmd_arg arg; 
 			arg.cd_string = $1; 
-			$$ = ast_op(yylloc.first_line, VM_CMD_PUSHS, arg, AST_STRING, 0); 
+			$$ = ast_op(yylloc.first_line, VM_CMD_PUSHS, arg, AST_STRING, 0);
+			if ($$ == NULL)
+				YYABORT;
 			}
 	| TOK_NUMBER	{ union cmd_arg arg; 
 			arg.cd_long = $1;
 			$$ = ast_op(yylloc.first_line, VM_CMD_PUSHL, arg, AST_NUMBER, 0);
+			if ($$ == NULL)
+				YYABORT;
+			}
+	| TOK_REGISTER  {
+			/* read register */
+			union cmd_arg arg; 
+
+			arg.cd_long = $1;
+			$$ = ast_op(yylloc.first_line, VM_CMD_GETR, arg, AST_REGISTER, 0);
+			if ($$ == NULL)
+				YYABORT;
 			}
 	| '(' expression ')' { $$ = $2; }
 	| tmpname 	{ $$ = $1; }
 	;
 
+var:
+	TOK_REGISTER '=' expression
+	{
+		 /* assign to the register */
+		union cmd_arg arg; 
+
+		arg.cd_long = $1;
+		$$ = ast_op(yylloc.first_line, VM_CMD_PUTR, arg, AST_REGISTER, 1, $3);
+		if ($$ == NULL)
+			YYABORT;
+	}
+	;
 tmpname: TOK_TMPNAME expression
 	{
 		int ret;

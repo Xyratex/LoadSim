@@ -108,6 +108,8 @@ EXPECTED	[e|E][x|X][p|P][e|E][c|C][t|T][e|E][d|D]
 STRING		({alpha}|{digit}|{special})+
 ID		{alpha}({alpha}|{digit})+
 
+REG		[$][R]{digit}
+
 %%
 {CR}		/* ignore single EOL */
 {BLANK}+	/* ignore spaces */;
@@ -173,6 +175,18 @@ ID		{alpha}({alpha}|{digit})+
 		    return TOK_NUMBER;
 		}
 
+{REG}		{
+		    char *err;
+
+		    errno = 0;
+		    yylval.intval = strtol(yytext+2, &err, 0);
+		    if ((*err != '\0') || (errno != 0)) {
+				err_print("bad regid %s\n", yytext);
+				yyterminate();
+		    }
+		    return TOK_REGISTER;
+		}
+
 \"		{ string_start(); BEGIN(str); }
 <str>\"		{ /* saw closing quote - all done */
 		    BEGIN(INITIAL);
@@ -216,6 +230,7 @@ ID		{alpha}({alpha}|{digit})+
 
 \|		{ return yytext[0]; }
 ":"		{ return yytext[0]; }
+"="		{ return yytext[0]; }
 {ID}		{ yylval.strval = strdup(yytext); return TOK_ID; }
 
 %%

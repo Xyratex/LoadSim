@@ -95,6 +95,10 @@ struct vm_program {
 	 labels in the program
 	*/
 	struct list_head vmp_labels;
+	/**
+	 higher index of register used on program
+	 */
+	long		vmp_regs;
 };
 
 /**

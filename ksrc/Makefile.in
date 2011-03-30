@@ -2,7 +2,7 @@ ifneq ($(KERNELRELEASE),)
     	obj-m	  := sim.o
     	sim-objs  := simul.o stats.o env.o
     	sim-objs  += md_cli.o clients/generic_md.o
-    	sim-objs  += fifo.o vm_main.o vm_core.o vm_call.o vm_sys.o
+    	sim-objs  += reg.o fifo.o vm_main.o vm_core.o vm_call.o vm_sys.o
 else
     	KDIR      := @LINUX_OBJ@
     	PWD       := $(shell cd @srcdir@; pwd)

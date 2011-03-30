@@ -5,16 +5,18 @@
 
 #include "kdebug.h"
 #include "fifo.h"
+#include "reg.h"
 #include "vm_defs.h"
 #include "vm_api.h"
 #include "vm_core.h"
 
 int vm_interpret_init(struct stack_vm **vm, int stack_size,
-		      char __user *prg, int size, struct simul_env *env)
+		      char __user *prg, int size, int regs, struct simul_env *env)
 {
 	struct fifo *stack;
 	char *program;
 	struct stack_vm *v;
+	struct reg_file *r;
 	int rc;
 
 	v = kmalloc(sizeof *v, GFP_KERNEL);
@@ -36,6 +38,13 @@ int vm_interpret_init(struct stack_vm **vm, int stack_size,
 		goto err2;
 	}
 
+	r = reg_file_init(regs);
+	if (r == NULL) {
+		err_print("can't allocate memory for reg file %d\n", regs);
+		rc = -ENOMEM;
+		goto err3;
+	}
+
 	if (copy_from_user(program, prg, size)) {
 		err_print("can't copy program from user %p - %d\n",
 			prg, size);
@@ -48,8 +57,10 @@ int vm_interpret_init(struct stack_vm **vm, int stack_size,
 	v->sv_size = size;
 	v->sv_stack = stack;
 	v->sv_env = env;
+	v->sv_reg = r;
 
 	*vm = v;
+
 	return 0;
 err3:
 	kfree(program);
@@ -65,6 +76,7 @@ void vm_interpret_fini(struct stack_vm *vm)
 {
 	kfree(vm->sv_program);
 	fifo_destroy(vm->sv_stack);
+	reg_file_fini(vm->sv_reg);
 	kfree(vm);
 }
 
@@ -80,7 +92,10 @@ const static vm_int_fn int_fn[VM_CMD_MAX] = {
 	[VM_CMD_ADD]   = vm_add,
 	[VM_CMD_SUB]   = vm_sub,
 	[VM_CMD_DUP]   = vm_dup,
-	[VM_CMD_NOP]   = vm_nop,
+	[VM_CMD_UP]    = vm_up,
+	[VM_CMD_NOP]   = NULL,
+	[VM_CMD_GETR]  = vm_getr,
+	[VM_CMD_PUTR]  = vm_putr,
 };
 
 

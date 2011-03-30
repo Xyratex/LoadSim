@@ -80,8 +80,19 @@ int vm_dup(struct stack_vm *vm, void *args);
 
 /**
  just remove entry on stack top
- VM_CMD_NOP
+ VM_CMD_UP
 */
-int vm_nop(struct stack_vm *vm, void *args);
+int vm_up(struct stack_vm *vm, void *args);
+
+/**
+ get data from register and put into stack
+*/
+int vm_getr(struct stack_vm *vm, void *args);
+
+/**
+ get data from stack and put into register
+*/
+int vm_putr(struct stack_vm *vm, void *args);
+
 
 #endif

@@ -6,6 +6,7 @@
 
 struct fifo;
 struct simul_env;
+struct reg_file;
 
 /**
  function handler.
@@ -45,12 +46,12 @@ int vm_handler_unregister(int nr, struct handler_reg *h);
 /**
  internal VM state
  */
-struct simul_env;
 struct stack_vm {
 	char		*sv_program;
 	int		sv_size;
 	int32_t		sv_ip;
 	struct fifo	*sv_stack;
+	struct reg_file	*sv_reg;
 	struct simul_env *sv_env;
 	long		sv_run:1;
 	int		sv_rc;
@@ -74,7 +75,7 @@ struct stack_vm {
  if initialization failed, vm pointer set to NULL.
  */
 int vm_interpret_init(struct stack_vm **vm, int stack_size,
-		      char __user *prg, int size, struct simul_env *env);
+		      char __user *prg, int size, int regs, struct simul_env *env);
 
 /**
  destroy virtual machine and release owned resources.

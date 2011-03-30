@@ -170,6 +170,7 @@ int vm_program_init(struct vm_program **vprg, char *name)
 
 	ret->vmp_size = VM_INIT_PROG_SIZE;
 	ret->vmp_enc_idx = 0;
+	ret->vmp_regs = 0;
 	INIT_LIST_HEAD(&ret->vmp_labels);
 	list_add(&ret->vmp_link, &vm_programs);
 
@@ -370,6 +371,27 @@ static int enc_nop(struct vm_program *vprg, union cmd_arg data)
 	return 0;
 }
 
+static int enc_getr(struct vm_program *vprg, union cmd_arg data)
+{
+	DPRINT("getr %lu\n", data.cd_long);
+
+	if (vprg->vmp_regs < data.cd_long)
+		vprg->vmp_regs = data.cd_long;
+
+	return add_long_to_buffer(vprg, data.cd_long);
+}
+
+static int enc_putr(struct vm_program *vprg, union cmd_arg data)
+{
+	DPRINT("putr %lu\n", data.cd_long);
+
+	if (vprg->vmp_regs < data.cd_long)
+		vprg->vmp_regs = data.cd_long;
+
+	return add_long_to_buffer(vprg, data.cd_long);
+}
+
+
 const static enc_h_t en_helpers[VM_CMD_MAX] = {
 	[VM_CMD_PUSHS]	= enc_pushs,
 	[VM_CMD_PUSHL]	= enc_pushl,
@@ -384,6 +406,8 @@ const static enc_h_t en_helpers[VM_CMD_MAX] = {
 	[VM_CMD_DUP]	= enc_dup,
 	[VM_CMD_UP]	= enc_up,
 	[VM_CMD_NOP]	= enc_nop,
+	[VM_CMD_GETR]	= enc_getr,
+	[VM_CMD_PUTR]	= enc_putr,
 };
 
 int vm_encode(struct vm_program *vprg, int line, enum vm_cmd cmd, union cmd_arg data)

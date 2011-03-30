@@ -22,7 +22,7 @@ int simul_api_open()
 }
 
 int simul_api_cli_create(char *cliname, long cliid, struct server_link *sl,
-			 void *data, int size)
+			 void *data, int size, int regs)
 {
 	struct simul_ioctl_cli _data;
 
@@ -35,6 +35,7 @@ int simul_api_cli_create(char *cliname, long cliid, struct server_link *sl,
 	_data.sic_dst_nid = sl->sl_nid;
 	_data.sic_program = data;
 	_data.sic_programsz = size;
+	_data.sic_regs = regs;
 	DPRINT("program %p\n", data);
 
 	return ioctl(api_fd, SIM_IOW_MDCLIENT, &_data);

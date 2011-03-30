@@ -140,13 +140,11 @@ int main(int argc, char *argv[])
 	int rc;
 	char *log = NULL;
 
-#if 0
 	rc = simul_api_open();
 	if (rc < 0) {
 		err_print("can't open kernel interface\n");
 		return 1;
 	}
-#endif
 
 	while (1) {
 		option_index = -1;
@@ -179,7 +177,7 @@ int main(int argc, char *argv[])
 		err_print("can't parse config\n");
 		return 1;
 	}
-#if 0
+
 	simul_api_run();
 
 	simul_api_wait_finished();
@@ -191,5 +189,4 @@ int main(int argc, char *argv[])
 	client_stats(log);
 	if (log)
 		free(log);
-#endif
 }

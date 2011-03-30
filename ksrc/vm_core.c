@@ -3,6 +3,7 @@
 
 #include "kdebug.h"
 #include "fifo.h"
+#include "reg.h"
 #include "vm_api.h"
 
 /** 
@@ -195,13 +196,42 @@ int vm_dup(struct stack_vm *vm, void *args)
 
 /**
  just remove entry on stack top
- VM_CMD_NOP
+ VM_CMD_UP
 */
-int vm_nop(struct stack_vm *vm, void *args)
+int vm_up(struct stack_vm *vm, void *args)
 {
 	long a;
 
 	return fifo_pop(vm->sv_stack, &a);
 }
 
+/**
+ get data from stack and put into register
+*/
+int vm_putr(struct stack_vm *vm, void *args)
+{
+	long a;
+	int ret;
 
+	vm->sv_ip += sizeof(long);
+	ret = fifo_pop(vm->sv_stack, &a);
+	if (ret == 0)
+		ret = reg_file_put(vm->sv_reg, *(long *)args, a);
+	return ret;
+}
+
+/**
+ get data from register and put into stack
+*/
+int vm_getr(struct stack_vm *vm, void *args)
+{
+	long a;
+	int ret;
+
+	vm->sv_ip += sizeof(long);
+	ret = reg_file_get(vm->sv_reg, *(long *)args, &a);
+	if (ret == 0)
+		ret = fifo_push(vm->sv_stack, a);
+
+	return ret;
+}

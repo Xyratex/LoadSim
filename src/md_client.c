@@ -77,7 +77,7 @@ int client_create(char *name, char *program)
 	cli->mdc_op = -1;
 
 	rc = simul_api_cli_create(cli->mdc_name, cli->mdc_id, cli->mdc_mds,
-				  prg->vmp_data, prg->vmp_enc_idx);
+				  prg->vmp_data, prg->vmp_enc_idx, prg->vmp_regs);
 	if (rc == 0) {
 		list_add(&cli->mdc_link, &clients);
 	} else {

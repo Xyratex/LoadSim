@@ -53,6 +53,7 @@ struct simul_ioctl_cli {
 	char __user	*sic_dst_nid;
 	int		sic_programsz;
 	char __user	*sic_program;
+	int		sic_regs;
 };
 
 /**

@@ -22,7 +22,7 @@ int simul_api_open(void);
 
  */
 int simul_api_cli_create(char *cliname, long cliid, struct server_link *sl,
-			 void *data, int size);
+			 void *data, int size, int regs);
 
 /**
  run programs on all clients

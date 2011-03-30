@@ -57,6 +57,7 @@ int env_create(struct simul_env **env, struct simul_ioctl_cli *data)
 		
 	rc = vm_interpret_init(&ret->se_vm, VM_DEF_STACK,
 				data->sic_program, data->sic_programsz,
+				data->sic_regs,
 				ret);
 	if (rc < 0)
 		goto err;

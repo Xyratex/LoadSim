@@ -57,6 +57,10 @@ enum vm_cmd {
 	VM_CMD_UP	= 11,
 	/* link in AST tree */
 	VM_CMD_NOP	= 12,
+	/* get from register to top of stack */
+	VM_CMD_GETR	= 13,
+	/* put to register from a top of stack */
+	VM_CMD_PUTR	= 14,
 	VM_CMD_MAX,
 };
 
