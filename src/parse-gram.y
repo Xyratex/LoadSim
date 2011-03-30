@@ -29,7 +29,7 @@ void yyerror(const char *str);
 
 %token TOK_UID_CMD TOK_GID_CMD
 %token TOK_WAITRACE_CMD TOK_SLEEP_CMD
-%token TOK_MKWD
+%token TOK_TMPNAME
 
 %token TOK_EXPECTED
 
@@ -41,17 +41,18 @@ void yyerror(const char *str);
 %type<intval> calc_o_flags
 
 %type<node> proc_body proc_commands 
-%type<node> ops open_flags
+%type<node> statements expression tmpname
+%type<node> open_flags
 
 %type<node> loop loop_body
 
-%type<node> md_ops misc_ops md_cmd
+%type<node> md_ops misc_ops md_cmd expected
 %type<node> cd_cmd mkdir_cmd readdir_cmd unlink_cmd open_cmd
 %type<node> close_cmd stat_cmd setattr_cmd mksln_cmd mkhln_cmd
 %type<node> chmod_cmd chown_cmd chtime_cmd truncate_cmd
 %type<node> readln_cmd rename_cmd
 
-%type<node> wait_race sleep chuid chgid mkwd
+%type<node> wait_race sleep chuid chgid 
 
 
 %left	'|'
@@ -132,6 +133,7 @@ procedure:
 		int ret;
 
 		ret = ast_encode(procedure_current(), $2);
+		ast_free($2);
 		if (ret)
 			YYABORT;
 	}
@@ -167,7 +169,7 @@ proc_body:
 		union cmd_arg arg;
 		arg.cd_long = 0;
 
-		$$ = ast_op(yylloc.first_line, VM_CMD_NOP, arg, AST_TYPE_NONE, 1, $1);
+		$$ = ast_op(yylloc.first_line, VM_CMD_NOP, arg, AST_TYPE_NONE, 1, $2);
 		if($$ == NULL)
 			YYABORT;
 	}
@@ -201,7 +203,12 @@ proc_commands:
 loop:
 	loop_begin loop_body loop_end
 	{
-		$$ = $2;
+		union cmd_arg arg;
+		arg.cd_long = 0;
+
+		$$ = ast_op(yylloc.first_line, VM_CMD_NOP, arg, AST_TYPE_NONE, 1, $2);
+		if($$ == NULL)
+			YYABORT;
 	}
 	;
 
@@ -215,7 +222,12 @@ loop_body:
 	proc_commands
 	| loop_body proc_commands
 	{
-		$$ = $2;
+		union cmd_arg arg;
+		arg.cd_long = 0;
+
+		$$ = ast_op(yylloc.first_line, VM_CMD_NOP, arg, AST_TYPE_NONE, 1, $2);
+		if($$ == NULL)
+			YYABORT;
 	}
 	;
 
@@ -236,7 +248,6 @@ misc_ops:
 	| sleep
 	| chuid
 	| chgid
-	| mkwd
 	{
 		$$ = $1;
 	}
@@ -249,8 +260,22 @@ misc_ops:
  where is $number is some identifier 
  */
 wait_race:
-	TOK_WAITRACE_CMD TOK_NUMBER
+	TOK_WAITRACE_CMD statements
 	{
+		int ret;
+		struct ast_node *call;
+		union cmd_arg arg;
+	
+		ret = ast_check_type($2, AST_NUMBER);
+		if (ret == 1) {
+			arg.cd_call = VM_SYS_RACE;
+			call = ast_op(yylloc.first_line,
+				      VM_CMD_CALL, arg, AST_NUMBER,
+				      1, $2);
+		}
+		if ((ret < 1) || (call == NULL))
+			YYABORT;
+		$$ = call;
 	}
 	;
 
@@ -261,28 +286,66 @@ wait_race:
  where is $number is number of ms to delay.
  */
 sleep:
-	TOK_SLEEP_CMD TOK_NUMBER
+	TOK_SLEEP_CMD statements
 	{
+		int ret;
+		struct ast_node *call;
+		union cmd_arg arg;
+	
+		ret = ast_check_type($2, AST_NUMBER);
+		if (ret == 1) {
+			arg.cd_call = VM_SYS_SLEEP;
+			call = ast_op(yylloc.first_line,
+				      VM_CMD_CALL, arg, AST_NUMBER,
+				      1, $2);
+		}
+		if ((ret < 1) || (call == NULL))
+			YYABORT;
+		$$ = call;
 	}
 	;
 
 chuid:
-	TOK_UID_CMD TOK_NUMBER
+	TOK_UID_CMD statements
 	{
+		int ret;
+		struct ast_node *call;
+		union cmd_arg arg;
+	
+		ret = ast_check_type($2, AST_NUMBER);
+		if (ret == 1) {
+			arg.cd_call = VM_SYS_USER;
+			call = ast_op(yylloc.first_line,
+				      VM_CMD_CALL, arg, AST_NUMBER,
+				      1, $2);
+		}
+		if ((ret < 1) || (call == NULL))
+			YYABORT;
+		$$ = call;
 	}
 	;
 
 chgid:
-	TOK_GID_CMD TOK_NUMBER
+	TOK_GID_CMD statements
 	{
+		int ret;
+		struct ast_node *call;
+		union cmd_arg arg;
+	
+		ret = ast_check_type($2, AST_NUMBER);
+		if (ret == 1) {
+			arg.cd_call = VM_SYS_GROUP;
+			call = ast_op(yylloc.first_line,
+				      VM_CMD_CALL, arg, AST_NUMBER,
+				      1, $2);
+		}
+		if ((ret < 1) || (call == NULL))
+			YYABORT;
+		$$ = call;
 	}
 	;
 
-mkwd:
-	TOK_MKWD TOK_NUMBER
-	{
-	}
-	;
+
 /**
  format of metadata operating
  
@@ -297,9 +360,15 @@ mkwd:
  and error code returned to application.
  */
 md_ops:
-	md_cmd
+	md_cmd expected
 	{
-		$$ = $1;
+		union cmd_arg arg;
+		arg.cd_long = 0;
+
+		$$ = ast_op(yylloc.first_line, VM_CMD_NOP, arg, AST_TYPE_NONE,
+			    2, $1, $2);
+		if($$ == NULL)
+			YYABORT;
 	}
 	;
 
@@ -343,7 +412,7 @@ md_cmd:
    mode is
  */
 mkdir_cmd:
-	TOK_MKDIR_CMD ops ops
+	TOK_MKDIR_CMD statements statements
 	{
 		int ret;
 		struct ast_node *call;
@@ -373,7 +442,7 @@ mkdir_cmd:
    "name" is quoted name of directory
  */
 cd_cmd:
-	TOK_CD_CMD ops
+	TOK_CD_CMD statements
 	{
 		int ret;
 		struct ast_node *call;
@@ -397,7 +466,7 @@ cd_cmd:
  
  */
 readdir_cmd:
-	TOK_READDIR_CMD ops
+	TOK_READDIR_CMD statements
 	{
 		int ret;
 		struct ast_node *call;
@@ -425,7 +494,7 @@ readdir_cmd:
    "name" is quoted name of directory
  */
 unlink_cmd:
-	TOK_UNLINK_CMD ops
+	TOK_UNLINK_CMD statements
 	{
 		int ret;
 		struct ast_node *call;
@@ -457,7 +526,7 @@ unlink_cmd:
   regnum - index in registers file to store file handle
  */
 open_cmd:
-	TOK_OPEN_CMD ops open_flags ops ops
+	TOK_OPEN_CMD statements open_flags statements statements
 	{
 		int ret;
 		struct ast_node *call;
@@ -505,7 +574,7 @@ calc_o_flags:
  $regnum - index in register file where open store a file handle
 */ 
 close_cmd:
-	TOK_CLOSE_CMD ops
+	TOK_CLOSE_CMD statements
 	{
 		int ret;
 		struct ast_node *call;
@@ -534,7 +603,7 @@ close_cmd:
   "name" quoted file name
  */
 stat_cmd:
-	TOK_STAT_CMD ops
+	TOK_STAT_CMD statements
 	{
 		int ret;
 		struct ast_node *call;
@@ -550,7 +619,6 @@ stat_cmd:
 		if ((ret < 1) || (call == NULL))
 			YYABORT;
 		$$ = call;
-
 	}
 	;
 
@@ -574,26 +642,87 @@ setattr_cmd:
 	;
 
 chmod_cmd:
-	TOK_CHMOD_CMD QSTRING TOK_NUMBER
+	TOK_CHMOD_CMD statements statements
 	{
+		int ret;
+		struct ast_node *call;
+		union cmd_arg arg;
+
+		ret = ast_check_type($2, AST_STRING);
+		ret += ast_check_type($3, AST_NUMBER);
+		if (ret == 2) {
+			arg.cd_call = VM_MD_CALL_CHMOD;
+			call = ast_op(yylloc.first_line,
+				      VM_CMD_CALL, arg, AST_NUMBER,
+				      2, $2, $3);
+		}
+		if ((ret < 2) || (call == NULL))
+			YYABORT;
+		$$ = call;
 	}
 	;
 
 chown_cmd:
-	TOK_CHOWN_CMD QSTRING TOK_NUMBER ':' TOK_NUMBER
+	TOK_CHOWN_CMD statements statements ':' statements
 	{
+		int ret;
+		struct ast_node *call;
+		union cmd_arg arg;
+
+		ret = ast_check_type($2, AST_STRING);
+		ret += ast_check_type($3, AST_NUMBER);
+		ret += ast_check_type($5, AST_NUMBER);
+		if (ret == 3) {
+			arg.cd_call = VM_MD_CALL_CHOWN;
+			call = ast_op(yylloc.first_line,
+				      VM_CMD_CALL, arg, AST_NUMBER,
+				      3, $2, $3, $5);
+		}
+		if ((ret < 3) || (call == NULL))
+			YYABORT;
+		$$ = call;
 	}
 	;
 
 chtime_cmd:
-	TOK_CHTIME_CMD QSTRING TOK_NUMBER
+	TOK_CHTIME_CMD statements statements
 	{
+		int ret;
+		struct ast_node *call;
+		union cmd_arg arg;
+
+		ret = ast_check_type($2, AST_STRING);
+		ret += ast_check_type($3, AST_NUMBER);
+		if (ret == 2) {
+			arg.cd_call = VM_MD_CALL_CHTIME;
+			call = ast_op(yylloc.first_line,
+				      VM_CMD_CALL, arg, AST_NUMBER,
+				      2, $2, $3);
+		}
+		if ((ret < 2) || (call == NULL))
+			YYABORT;
+		$$ = call;
 	}
 	;
 
 truncate_cmd:
-	TOK_TRUNCATE_CMD QSTRING TOK_NUMBER
+	TOK_TRUNCATE_CMD statements statements
 	{
+		int ret;
+		struct ast_node *call;
+		union cmd_arg arg;
+
+		ret = ast_check_type($2, AST_STRING);
+		ret += ast_check_type($3, AST_NUMBER);
+		if (ret == 2) {
+			arg.cd_call = VM_MD_CALL_TRUNCATE;
+			call = ast_op(yylloc.first_line,
+				      VM_CMD_CALL, arg, AST_NUMBER,
+				      2, $2, $3);
+		}
+		if ((ret < 2) || (call == NULL))
+			YYABORT;
+		$$ = call;
 	}
 	;
 
@@ -604,8 +733,23 @@ truncate_cmd:
  softlink "oldname" "newname" 
  */
 mksln_cmd:
-	TOK_SOFTLINK_CMD QSTRING QSTRING
+	TOK_SOFTLINK_CMD statements statements
 	{
+		int ret;
+		struct ast_node *call;
+		union cmd_arg arg;
+
+		ret = ast_check_type($2, AST_STRING);
+		ret += ast_check_type($3, AST_STRING);
+		if (ret == 2) {
+			arg.cd_call = VM_MD_CALL_SOFTLINK;
+			call = ast_op(yylloc.first_line,
+				      VM_CMD_CALL, arg, AST_NUMBER,
+				      2, $2, $3);
+		}
+		if ((ret < 2) || (call == NULL))
+			YYABORT;
+		$$ = call;
 	}
 	;
 
@@ -616,8 +760,23 @@ mksln_cmd:
  hardlink "oldname" "newname" 
  */
 mkhln_cmd:
-	TOK_HARDLINK_CMD QSTRING QSTRING
+	TOK_HARDLINK_CMD statements statements
 	{
+		int ret;
+		struct ast_node *call;
+		union cmd_arg arg;
+
+		ret = ast_check_type($2, AST_STRING);
+		ret += ast_check_type($3, AST_STRING);
+		if (ret == 2) {
+			arg.cd_call = VM_MD_CALL_HARDLINK;
+			call = ast_op(yylloc.first_line,
+				      VM_CMD_CALL, arg, AST_NUMBER,
+				      2, $2, $3);
+		}
+		if ((ret < 2) || (call == NULL))
+			YYABORT;
+		$$ = call;
 	}
 	;
 
@@ -628,18 +787,67 @@ mkhln_cmd:
  readlink "name"
  */
 readln_cmd:
-	TOK_READLINK_CMD QSTRING
+	TOK_READLINK_CMD statements
 	{
+		int ret;
+		struct ast_node *call;
+		union cmd_arg arg;
+
+		ret = ast_check_type($2, AST_STRING);
+		if (ret == 1) {
+			arg.cd_call = VM_MD_CALL_READLINK;
+			call = ast_op(yylloc.first_line,
+				      VM_CMD_CALL, arg, AST_NUMBER,
+				      1, $2);
+		}
+		if ((ret < 1) || (call == NULL))
+			YYABORT;
+		$$ = call;
 	}
 	;
 
 rename_cmd:
-	TOK_RENAME QSTRING QSTRING
+	TOK_RENAME statements statements
 	{
+		int ret;
+		struct ast_node *call;
+		union cmd_arg arg;
+
+		ret = ast_check_type($2, AST_STRING);
+		ret += ast_check_type($3, AST_STRING);
+		if (ret == 2) {
+			arg.cd_call = VM_MD_CALL_RENAME;
+			call = ast_op(yylloc.first_line,
+				      VM_CMD_CALL, arg, AST_NUMBER,
+				      2, $2, $3);
+		}
+		if ((ret < 2) || (call == NULL))
+			YYABORT;
+		$$ = call;
 	}
 	;
 
-ops:
+expected:
+	TOK_EXPECTED TOK_EXP_STATUS
+	{
+		struct ast_node *ret;
+
+		ret = ast_op_expected(yylloc.first_line, $2);
+		if (ret == NULL)
+			YYABORT;
+		$$ = ret;
+	}
+	;
+
+statements:
+	expression
+	| statements expression 
+	{
+		$$ = $1;
+	}
+	;
+	
+expression:
 	QSTRING		{ union cmd_arg arg; 
 			arg.cd_string = $1; 
 			$$ = ast_op(yylloc.first_line, VM_CMD_PUSHS, arg, AST_STRING, 0); 
@@ -648,6 +856,27 @@ ops:
 			arg.cd_long = $1;
 			$$ = ast_op(yylloc.first_line, VM_CMD_PUSHL, arg, AST_NUMBER, 0);
 			}
+	| '(' expression ')' { $$ = $2; }
+	| tmpname 	{ $$ = $1; }
+	;
+
+tmpname: TOK_TMPNAME expression
+	{
+		int ret;
+		struct ast_node *call;
+		union cmd_arg arg;
+	
+		ret = ast_check_type($2, AST_STRING);
+		if (ret == 1) {
+			arg.cd_call = VM_SYS_TMPNAME;
+			call = ast_op(yylloc.first_line,
+				      VM_CMD_CALL, arg, AST_STRING,
+				      1, $2);
+		}
+		if ((ret < 1) || (call == NULL))
+			YYABORT;
+		$$ = call;
+	}
 	;
 
 %%

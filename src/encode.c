@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <string.h>
 
 #include "encode.h"
 
@@ -11,6 +12,7 @@ struct ast_node {
 	enum vm_cmd      an_cmd;   /** < VM command */
 	enum ast_type    an_type;  /** < node type */
 	int              an_line;  /** < line for syntax node */
+	struct vm_label	 an_label; /** < label in that line */
 	union cmd_arg    an_local; /** < local argument (like call number 
 				    or pointer to string) if need */
 	unsigned int     an_nargs; /** < number of child expressions */
@@ -53,15 +55,81 @@ struct ast_node *ast_op(int line, enum vm_cmd cmd, union cmd_arg local, enum ast
 	return node;
 }
 
+struct ast_node *ast_op_expected(int line, int exp)
+{
+	struct ast_node *cmd1 = NULL, *cmd2 = NULL, *cmd3 = NULL;
+	union cmd_arg arg;
+
+	/* dup need to read status on finish */
+	/* arg not used */
+	arg.cd_long = 0;
+	cmd1 = ast_op(line, VM_CMD_DUP, arg, AST_REGISTER, 0);
+	if (cmd1 == NULL)
+		return NULL;
+
+	arg.cd_long = 0;
+	cmd2 = ast_op(line, VM_CMD_PUSHL, arg, AST_NUMBER, 0);
+	if (cmd2 == NULL)
+		goto error;
+
+	/* arg not used */
+	cmd3 = ast_op(line, VM_CMD_CMPL, arg, AST_NUMBER, 2, cmd1, cmd2);
+	if (cmd3 == NULL)
+		goto error;
+
+	cmd2 = NULL;
+
+	arg.cd_string = END_LABEL;
+	cmd1 = ast_op(line, exp == VM_RET_OK ? VM_CMD_JNZ : VM_CMD_JZ, 
+		      arg, AST_TYPE_NONE, 1, cmd3);
+	if (cmd1 == NULL)
+		goto error;
+
+	arg.cd_string = END_LABEL;
+	cmd3 = ast_op(line, VM_CMD_UP, 
+		      arg, AST_TYPE_NONE, 1, cmd1);
+	if (cmd3 == NULL)
+		goto error;
+
+	return cmd1;
+error:
+	ast_free(cmd1);
+	ast_free(cmd2);
+	ast_free(cmd3);
+	return NULL;
+}
+
+void ast_free(struct ast_node *root)
+{
+	int i;
+	int rc;
+
+//	printf("start free %p\n", root);
+	for(i = 0; i < root->an_nargs; i++) {
+		ast_free(root->an_arg[i]);
+	}
+
+	if (root->an_cmd == VM_CMD_PUSHS)
+		free(root->an_local.cd_string);
+	free(root);
+}
+
+
 int ast_encode(struct vm_program *vprg, struct ast_node *root)
 {
 	int i;
+	int rc;
 
-	printf("start encode %p\n", root);
-	for(i = 0; i < root->an_nargs; i++)
-		ast_encode(vprg, root->an_arg[i]);
+//	printf("start encode %p\n", root);
+	for(i = 0; i < root->an_nargs; i++) {
+		rc = ast_encode(vprg, root->an_arg[i]);
+		if (rc)
+			goto out;
+	}
 
-	vm_encode(vprg, root->an_line, root->an_cmd, root->an_local);
+	rc = vm_encode(vprg, root->an_line, root->an_cmd, root->an_local);
+out:
+	return rc;
 }
 
 #if 0

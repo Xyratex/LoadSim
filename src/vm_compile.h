@@ -11,6 +11,8 @@ enum {
 	VM_INIT_PROG_SIZE = 10*1024
 };
 
+struct vm_program;
+
 /**
  one point to want fixup
  after label address is resolved.
@@ -47,6 +49,22 @@ struct vm_label {
 	*/
 	struct list_head vl_waits;
 };
+
+/**
+ add label to the waiting list, to resolve real address in future.
+ called by parser when it found reference to the label.
+
+ @param vprg - program to add label.
+ */
+struct vm_label *vm_label_find(struct vm_program *vprg, char *name);
+
+/**
+ add label to the list and fix all jump point to using correct address.
+ called by parser when it found label.
+
+ @param vprg - program to add label.
+ */
+int vm_label_resolve(struct vm_program *vprg, char *label_name);
 
 
 /**
@@ -131,12 +149,5 @@ union cmd_arg {
  */
 int vm_encode(struct vm_program *vprg, int line, enum vm_cmd cmd, union cmd_arg data);
 
-/**
- add label to the list and fix all jump point to using correct address.
- called by parser when it found label.
-
- @param vprg - program to add label.
- */
-int vm_label_resolve(struct vm_program *vprg, char *label_name);
 
 #endif

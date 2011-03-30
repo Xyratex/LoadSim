@@ -63,7 +63,7 @@ static struct vm_label *label_find(struct vm_program *vprg, char *name)
  find for goto/jz/..etc
  if label not resolved - create a new wait point
  */
-static struct vm_label *vm_label_find(struct vm_program *vprg, char *name)
+struct vm_label *vm_label_find(struct vm_program *vprg, char *name)
 {
 	struct vm_label *ret;
 

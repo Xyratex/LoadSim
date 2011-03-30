@@ -101,7 +101,7 @@ UID		[u|U][i|I][d|D]
 GID		[g|G][i|I][d|D]
 WAITRACE	[w|W][a|A][i|I][t|T][_][r|R][a|A][c|C][e|E]
 SLEEP		[s|S][l|L][e|E][e|E][p|P]
-MK_WD		[m][a][k][e][_][w][o][r][k]_[d][i][r]
+TMPNAME		[t|T][m|M][p|P][n|N][a|A][m|M][e|E]
 
 EXPECTED	[e|E][x|X][p|P][e|E][c|C][t|T][e|E][d|D]
 
@@ -153,7 +153,7 @@ ID		{alpha}({alpha}|{digit})+
 {WAITRACE}	return TOK_WAITRACE_CMD;
 {UID}		return TOK_UID_CMD;
 {GID}		return TOK_GID_CMD;
-{MK_WD}		return TOK_MKWD;
+{TMPNAME}	return TOK_TMPNAME;
 
 {CLIENT}	return TOK_CLIENT;
 {SERVER}	return TOK_SERVER;
