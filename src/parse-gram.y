@@ -163,13 +163,13 @@ proc_end:
 	;
 
 proc_body:
-	proc_commands
+	proc_commands { $$ = $1; }
 	| proc_body proc_commands
 	{
 		union cmd_arg arg;
 		arg.cd_long = 0;
 
-		$$ = ast_op(yylloc.first_line, VM_CMD_NOP, arg, AST_TYPE_NONE, 1, $2);
+		$$ = ast_op(yylloc.first_line, VM_CMD_NOP, arg, AST_TYPE_NONE, 2, $1, $2);
 		if($$ == NULL)
 			YYABORT;
 	}
@@ -225,7 +225,7 @@ loop_body:
 		union cmd_arg arg;
 		arg.cd_long = 0;
 
-		$$ = ast_op(yylloc.first_line, VM_CMD_NOP, arg, AST_TYPE_NONE, 1, $2);
+		$$ = ast_op(yylloc.first_line, VM_CMD_NOP, arg, AST_TYPE_NONE, 2, $1, $2);
 		if($$ == NULL)
 			YYABORT;
 	}
@@ -369,6 +369,8 @@ md_ops:
 			    2, $1, $2);
 		if($$ == NULL)
 			YYABORT;
+
+		printf("md_ops %p - / %p %p /\n", $$, $1, $2);
 	}
 	;
 
@@ -841,9 +843,14 @@ expected:
 
 statements:
 	expression
-	| statements expression 
+	| statements expression
 	{
-		$$ = $1;
+		union cmd_arg arg;
+		arg.cd_long = 0;
+
+		$$ = ast_op(yylloc.first_line, VM_CMD_NOP, arg, AST_TYPE_NONE, 2, $1, $2);
+		if($$ == NULL)
+			YYABORT;
 	}
 	;
 	
