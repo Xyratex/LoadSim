@@ -4,7 +4,7 @@
 #include <linux/errno.h>
 
 #include "kdebug.h"
-#include "fifo.h"
+#include "stack.h"
 #include "reg.h"
 #include "vm_defs.h"
 #include "vm_api.h"
@@ -129,7 +129,7 @@ int vm_interpret_run(struct stack_vm *vm)
 
 	if (rc == 0) {
 		long exit_rc;
-		rc = fifo_pop(vm->sv_stack, &exit_rc);
+		rc = stack_pop(vm->sv_stack, &exit_rc);
 		if (rc == 0)
 			rc = exit_rc;
 	}

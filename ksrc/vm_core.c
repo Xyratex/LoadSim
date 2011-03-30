@@ -2,7 +2,7 @@
 #include <linux/errno.h>
 
 #include "kdebug.h"
-#include "fifo.h"
+#include "stack.h"
 #include "reg.h"
 #include "vm_api.h"
 
@@ -15,7 +15,7 @@ int vm_pushs(struct stack_vm *vm, void *args)
 	DPRINT("pushs\n");
 	vm->sv_ip += strlen(args) + 1;
 
-	return fifo_push(vm->sv_stack, (long)args);
+	return stack_push(vm->sv_stack, (long)args);
 }
 
 /**
@@ -30,7 +30,7 @@ int vm_pushl(struct stack_vm *vm, void *args)
 	DPRINT("pushl %ld\n", a);
 	vm->sv_ip += sizeof(long);
 
-	return fifo_push(vm->sv_stack, a);
+	return stack_push(vm->sv_stack, a);
 }
 
 /** 
@@ -43,13 +43,13 @@ int vm_cmps(struct stack_vm *vm, void *args)
 	long b;
 	long rc;
 
-	if ((fifo_pop(vm->sv_stack, &a) < 0) ||
-            (fifo_pop(vm->sv_stack, &b) < 0))
+	if ((stack_pop(vm->sv_stack, &a) < 0) ||
+            (stack_pop(vm->sv_stack, &b) < 0))
 		return -ENODATA;
 
 	rc = strcmp((char *)a, (char *)b);
 
-	return fifo_push(vm->sv_stack, rc);
+	return stack_push(vm->sv_stack, rc);
 }
 
 /**
@@ -62,8 +62,8 @@ int vm_cmpl(struct stack_vm *vm, void *args)
 	long b;
 	long rc;
 
-	if ((fifo_pop(vm->sv_stack, &a) < 0)||
-            (fifo_pop(vm->sv_stack, &b) < 0))
+	if ((stack_pop(vm->sv_stack, &a) < 0)||
+            (stack_pop(vm->sv_stack, &b) < 0))
 		return -ENODATA;
 
 	if (a > b) 
@@ -73,7 +73,7 @@ int vm_cmpl(struct stack_vm *vm, void *args)
 	     else
 		rc = -1;
 
-	return fifo_push(vm->sv_stack, rc);
+	return stack_push(vm->sv_stack, rc);
 }
 
 /**
@@ -99,7 +99,7 @@ int vm_jz(struct stack_vm *vm, void *args)
 	long a;
 	long addr;
 
-	if (fifo_pop(vm->sv_stack, &a) < 0 )
+	if (stack_pop(vm->sv_stack, &a) < 0 )
 		return -ENODATA;
 
 	addr = *(long *)args;
@@ -120,7 +120,7 @@ int vm_jnz(struct stack_vm *vm, void *args)
 	long a;
 	long addr;
 
-	if (fifo_pop(vm->sv_stack, &a) < 0 )
+	if (stack_pop(vm->sv_stack, &a) < 0 )
 		return -ENODATA;
 
 	addr = *(long *)args;
@@ -142,12 +142,12 @@ int vm_add(struct stack_vm *vm, void *args)
 	long b;
 	long res;
 
-	if ((fifo_pop(vm->sv_stack, &a) < 0) ||
-	    (fifo_pop(vm->sv_stack, &b) < 0))
+	if ((stack_pop(vm->sv_stack, &a) < 0) ||
+	    (stack_pop(vm->sv_stack, &b) < 0))
 		return -ENODATA;
 
 	res = a + b;
-	return fifo_push(vm->sv_stack, res);
+	return stack_push(vm->sv_stack, res);
 }
 
 /**
@@ -162,13 +162,13 @@ int vm_sub(struct stack_vm *vm, void *args)
 	long b; 
 	long res;
 
-	if ((fifo_pop(vm->sv_stack, &b) < 0) ||
-	    (fifo_pop(vm->sv_stack, &a) < 0))
+	if ((stack_pop(vm->sv_stack, &b) < 0) ||
+	    (stack_pop(vm->sv_stack, &a) < 0))
 		return -ENODATA;
 
 	res = a - b;
 
-	return fifo_push(vm->sv_stack, res);
+	return stack_push(vm->sv_stack, res);
 }
 
 /**
@@ -180,14 +180,14 @@ int vm_dup(struct stack_vm *vm, void *args)
 	long a;
 	int rc;
 
-	if (fifo_pop(vm->sv_stack, &a) < 0)
+	if (stack_pop(vm->sv_stack, &a) < 0)
 		return -ENODATA;
 
-	rc = fifo_push(vm->sv_stack, a);
+	rc = stack_push(vm->sv_stack, a);
 	if (rc < 0)
 		return rc;
 
-	rc = fifo_push(vm->sv_stack, a);
+	rc = stack_push(vm->sv_stack, a);
 	if (rc < 0)
 		return rc;
 
@@ -202,7 +202,7 @@ int vm_up(struct stack_vm *vm, void *args)
 {
 	long a;
 
-	return fifo_pop(vm->sv_stack, &a);
+	return stack_pop(vm->sv_stack, &a);
 }
 
 /**
@@ -214,7 +214,7 @@ int vm_putr(struct stack_vm *vm, void *args)
 	int ret;
 
 	vm->sv_ip += sizeof(long);
-	ret = fifo_pop(vm->sv_stack, &a);
+	ret = stack_pop(vm->sv_stack, &a);
 	if (ret == 0)
 		ret = reg_file_put(vm->sv_reg, *(long *)args, a);
 	return ret;
@@ -231,7 +231,7 @@ int vm_getr(struct stack_vm *vm, void *args)
 	vm->sv_ip += sizeof(long);
 	ret = reg_file_get(vm->sv_reg, *(long *)args, &a);
 	if (ret == 0)
-		ret = fifo_push(vm->sv_stack, a);
+		ret = stack_push(vm->sv_stack, a);
 
 	return ret;
 }

@@ -8,7 +8,7 @@
 
 #include "compat.h"
 #include "kdebug.h"
-#include "fifo.h"
+#include "stack.h"
 #include "vm_defs.h"
 #include "vm_api.h"
 
@@ -20,7 +20,7 @@ static int sys_call_user(struct simul_env *env, struct fifo *f, uint32_t *ip)
 	long uid;
 	struct cred *cred;
 
-	if (fifo_pop(f, &uid))
+	if (stack_pop(f, &uid))
 		return -ENODATA;
 
 	if ((cred = prepare_creds())) {
@@ -40,7 +40,7 @@ static int sys_call_group(struct simul_env *env, struct fifo *f, uint32_t *ip)
 	long gid;
 	struct cred *cred;
 
-	if (fifo_pop(f, &gid))
+	if (stack_pop(f, &gid))
 		return -ENODATA;
 
 	if ((cred = prepare_creds())) {
@@ -57,7 +57,7 @@ static int sys_call_sleep(struct simul_env *env, struct fifo *f, uint32_t *ip)
 {
 	long time;
 
-	if (fifo_pop(f, &time))
+	if (stack_pop(f, &time))
 		return -ENODATA;
 
 	msleep(time);
@@ -76,7 +76,7 @@ static int sys_call_race(struct simul_env *env, struct fifo *f, uint32_t *ip)
 {
 	long raceid;
 
-	if (fifo_pop(f, &raceid))
+	if (stack_pop(f, &raceid))
 		return -ENODATA;
 
 	if ((raceid < 0) || (raceid > VM_MAX_RACES))
@@ -99,7 +99,7 @@ static int sys_call_tmpname(struct simul_env *env, struct fifo *f, uint32_t *ip)
 	int len;
 	int i;
 
-	if (fifo_pop(f, (long *)&prefix) < 0)
+	if (stack_pop(f, (long *)&prefix) < 0)
 		return -ENODATA;
 
 	len = strlen(prefix);
@@ -112,7 +112,7 @@ static int sys_call_tmpname(struct simul_env *env, struct fifo *f, uint32_t *ip)
 		}
 	}
 
-	return fifo_push(f, (long)prefix);
+	return stack_push(f, (long)prefix);
 }
 
 struct handler_reg sys_hld[] = {

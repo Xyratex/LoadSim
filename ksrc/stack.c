@@ -1,6 +1,6 @@
 #include <linux/slab.h>
 
-#include "fifo.h"
+#include "stack.h"
 #include "kdebug.h"
 
 struct fifo {
@@ -38,7 +38,7 @@ void fifo_destroy(struct fifo *fifo)
 }
 
 
-int fifo_push(struct fifo *f, long data)
+int stack_push(struct fifo *f, long data)
 {
 	if (f->ff_top == f->ff_size) {
 		err_print("not free space in fifo for push\n");
@@ -51,7 +51,7 @@ int fifo_push(struct fifo *f, long data)
 	return 0;
 }
 
-int fifo_pop(struct fifo *f, long *data)
+int stack_pop(struct fifo *f, long *data)
 {
 	if (f->ff_top == 0) {
 		err_print("fifo empty for pop\n");
