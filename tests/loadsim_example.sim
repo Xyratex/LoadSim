@@ -1,0 +1,42 @@
+pool test1
+target ost001
+target ost002
+endpool
+
+striping def
+pool test1
+stripesz 1M
+stripen 1
+endstripe
+
+striping stripe_1
+pool test1
+stripe 2M
+stripes 2
+endstripe
+
+pattern write_1
+
+loop 5
+write 10M
+seek +120K
+write 2M
+seek -10M
+read 10M
+seek 0
+endloop
+
+endpat
+
+loadproc test1
+defstripe def
+object 5 
+apply 5 write_1
+destroy 5
+
+objects
+
+endproc
+
+server MGS 10.0.3.2@o2ib "cstorfs"
+client "CLI0" test1

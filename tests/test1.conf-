@@ -1,0 +1,13 @@
+procedure test1
+	cd "test1" expected FAIL
+	mkdir "test1" 0666 expected OK
+	cd "test1" expected OK
+	open "test-file1" O_RDWR 0666 20 expected OK
+	close 20 expected OK
+	stat "test-file1" expected OK
+endproc
+
+server MDS0 192.168.69.3@tcp "lustre"
+
+client "CLI0" test1
+
