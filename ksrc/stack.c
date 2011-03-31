@@ -63,3 +63,9 @@ int stack_pop(struct fifo *f, long *data)
 
 	return 0;
 }
+
+
+int stack_size(struct fifo *f)
+{
+	return f->ff_top;
+}

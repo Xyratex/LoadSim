@@ -12,10 +12,12 @@
 */
 int vm_pushs(struct stack_vm *vm, void *args)
 {
+	long *data = args;
 	DPRINT("pushs\n");
-	vm->sv_ip += strlen(args) + 1;
+	vm->sv_ip += *data + sizeof(long);
+	data ++;
 
-	return stack_push(vm->sv_stack, (long)args);
+	return stack_push(vm->sv_stack, (long)data);
 }
 
 /**
@@ -201,7 +203,7 @@ int vm_dup(struct stack_vm *vm, void *args)
 int vm_up(struct stack_vm *vm, void *args)
 {
 	long a;
-
+	DPRINT("up");
 	return stack_pop(vm->sv_stack, &a);
 }
 

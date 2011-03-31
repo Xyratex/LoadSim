@@ -74,6 +74,9 @@ SERVER		[s|S][e|E][r|R][v|V][e|E][r|R]
 LOOP_BEGIN	[l|L][o|O][o|O][p|P]
 LOOP_END	[e|E][n|N][d|D][l|L][o|O][o|O][p|P]
 
+WHILE_BEGIN	[w][h][i][l][e]
+WHILE_END	[e][n][d][w]
+
 CD		[c|C][d|D]
 UNLINK		[u|U][n|N][l|L][i|I][n|N][k|K]
 OPEN		[o|O][p|P][e|E][n|N]
@@ -101,7 +104,9 @@ UID		[u|U][i|I][d|D]
 GID		[g|G][i|I][d|D]
 WAITRACE	[w|W][a|A][i|I][t|T][_][r|R][a|A][c|C][e|E]
 SLEEP		[s|S][l|L][e|E][e|E][p|P]
+
 TMPNAME		[t|T][m|M][p|P][n|N][a|A][m|M][e|E]
+PRINTF		[p|P][r|R][i|I][n|N][t|T][f|F]
 
 EXPECTED	[e|E][x|X][p|P][e|E][c|C][t|T][e|E][d|D]
 
@@ -119,6 +124,10 @@ REG		[$][R]{digit}
 
 {LOOP_BEGIN}	return TOK_LOOP_BEGIN;
 {LOOP_END}	return TOK_LOOP_END;
+
+{WHILE_BEGIN}	return TOK_WHILE_BEGIN;
+{WHILE_END}	return TOK_WHILE_END;
+
 
 {EXPECTED}	return TOK_EXPECTED;
 {EXPECT_STAT}	{
@@ -155,7 +164,9 @@ REG		[$][R]{digit}
 {WAITRACE}	return TOK_WAITRACE_CMD;
 {UID}		return TOK_UID_CMD;
 {GID}		return TOK_GID_CMD;
+
 {TMPNAME}	return TOK_TMPNAME;
+{PRINTF}	return TOK_PRINTF;
 
 {CLIENT}	return TOK_CLIENT;
 {SERVER}	return TOK_SERVER;
@@ -231,6 +242,10 @@ REG		[$][R]{digit}
 \|		{ return yytext[0]; }
 ":"		{ return yytext[0]; }
 "="		{ return yytext[0]; }
+"+"		{ return yytext[0]; }
+"-"		{ return yytext[0]; }
+"["		{ return yytext[0]; }
+"]"		{ return yytext[0]; }
 {ID}		{ yylval.strval = strdup(yytext); return TOK_ID; }
 
 %%

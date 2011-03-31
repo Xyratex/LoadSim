@@ -27,7 +27,7 @@ enum simul_ops {
 	/**
 	 create a metadata client instance and upload program into kernel
 	*/
-	SIM_IOW_MDCLIENT	= 0x8800,
+	SIM_IOW_MDCLIENT	= 0x01,
 	/**
 	 run uploaded programs
 	 */

@@ -12,7 +12,7 @@ struct ast_node {
 	enum vm_cmd      an_cmd;   /** < VM command */
 	enum ast_type    an_type;  /** < node type */
 	int              an_line;  /** < line for syntax node */
-	struct vm_label	 an_label; /** < label in that line */
+	char            *an_label; /** < label in that line */
 	union cmd_arg    an_local; /** < local argument (like call number 
 				    or pointer to string) if need */
 	unsigned int     an_nargs; /** < number of child expressions */
@@ -27,6 +27,15 @@ int ast_check_type(struct ast_node *arg, enum ast_type type)
 	else
 		return 0;
 }
+
+struct ast_node *ast_op_link(int line, struct ast_node *child1, struct ast_node *child2)
+{
+	union cmd_arg arg;
+	arg.cd_long = 0;
+
+	return ast_op(line, VM_CMD_NOP, arg, AST_TYPE_NONE, 2, child1, child2);
+}
+
 
 struct ast_node *ast_op(int line, enum vm_cmd cmd, union cmd_arg local, enum ast_type type, int nchilds, ...)
 {
@@ -55,6 +64,26 @@ struct ast_node *ast_op(int line, enum vm_cmd cmd, union cmd_arg local, enum ast
 	return node;
 }
 
+struct ast_node *ast_buffer(int line, int size)
+{
+	char *buff;
+	union cmd_arg arg;
+	struct ast_node *ret;
+
+	buff = malloc(VM_STRING_SZ + 1);
+	if (buff == NULL)
+		return NULL;
+
+	memset(buff, ' ', VM_STRING_SZ);
+	buff[VM_STRING_SZ] = '\0';
+
+	arg.cd_string = buff;
+	ret = ast_op(line, VM_CMD_PUSHS, arg, AST_STRING, 0);
+	if (ret == NULL)
+		free(buff);
+	return ret;
+}
+
 struct ast_node *ast_op_expected(int line, int exp)
 {
 	struct ast_node *cmd1 = NULL, *cmd2 = NULL, *cmd3 = NULL;
@@ -79,25 +108,114 @@ struct ast_node *ast_op_expected(int line, int exp)
 
 	cmd2 = NULL;
 
-	arg.cd_string = END_LABEL;
+	/** XXX */
+	arg.cd_string = strdup(END_LABEL);
 	cmd1 = ast_op(line, exp == VM_RET_OK ? VM_CMD_JNZ : VM_CMD_JZ, 
 		      arg, AST_TYPE_NONE, 1, cmd3);
 	if (cmd1 == NULL)
 		goto error;
 
-	arg.cd_string = END_LABEL;
 	cmd3 = ast_op(line, VM_CMD_UP, 
 		      arg, AST_TYPE_NONE, 1, cmd1);
 	if (cmd3 == NULL)
 		goto error;
 
-	return cmd1;
+	return cmd3;
 error:
 	ast_free(cmd1);
 	ast_free(cmd2);
 	ast_free(cmd3);
 	return NULL;
 }
+
+
+#define WHILE_START_LABEL "loop_st%u:"
+#define WHILE_END_LABEL "loop_end%u:"
+#define while_start_sz() (sizeof(WHILE_START_LABEL)+10)
+#define while_end_sz()	(sizeof(WHILE_END_LABEL)+10)
+
+static int while_no = 0;
+
+/**
+while_start:
+    [expr]
+    jz while_end
+    ... 
+    jump while_start
+while_end:
+ */
+struct ast_node *ast_op_while_start(int line, struct ast_node *expr)
+{
+	struct ast_node *cmd1, *cmd2;
+	union cmd_arg arg;
+	char *label1;
+
+	while_no ++;
+
+	label1 = malloc(while_start_sz());
+	if (label1 == NULL)
+		return NULL;
+
+	snprintf(label1, while_start_sz(), WHILE_START_LABEL, while_no);
+	arg.cd_string = label1;
+	cmd2 = ast_op(line, VM_CMD_LABEL, arg, AST_TYPE_NONE, 0);
+	if (cmd2 == NULL)
+		goto out1;
+
+	label1 = malloc(while_end_sz());
+	if (label1 == NULL)
+		goto out1;
+
+	snprintf(label1, while_end_sz(), WHILE_END_LABEL, while_no);
+	arg.cd_string = label1;
+	cmd1 = ast_op(line, VM_CMD_JZ, arg, AST_TYPE_NONE, 2, cmd2, expr);
+	if (cmd1 == NULL)
+		goto out2;
+
+	return cmd1;
+out2:
+	ast_free(cmd2);
+out1:
+	if (label1 != NULL)
+		free(label1);
+
+	return NULL;
+}
+
+struct ast_node *ast_op_while_end(int line)
+{
+	struct ast_node *cmd1, *cmd2;
+	union cmd_arg arg;
+	char *label;
+
+	label = malloc(while_start_sz());
+	if (label == NULL)
+		return NULL;
+
+	snprintf(label, while_start_sz(), WHILE_START_LABEL, while_no);
+	arg.cd_string = label;
+	cmd1 = ast_op(line, VM_CMD_GOTO, arg, AST_TYPE_NONE, 0);
+	if (cmd1 == NULL)
+		goto out1;
+
+	label = malloc(while_end_sz());
+	if (label == NULL)
+		goto out2;
+
+	arg.cd_string = label;
+	cmd2 = ast_op(line, VM_CMD_LABEL, arg, AST_TYPE_NONE, 1, cmd1);
+	if (cmd2 == NULL)
+		goto out2;
+
+	return cmd2;
+out2:
+	ast_free(cmd1);
+out1:
+	if(label)
+		free(label);
+	return NULL;
+}
+
 
 void ast_free(struct ast_node *root)
 {
@@ -109,8 +227,10 @@ void ast_free(struct ast_node *root)
 		ast_free(root->an_arg[i]);
 	}
 
-	if (root->an_cmd == VM_CMD_PUSHS)
+	/** XXX move into vm_compile */
+	if (vm_cmd_want_string(root->an_cmd))
 		free(root->an_local.cd_string);
+
 	free(root);
 }
 
@@ -131,164 +251,6 @@ int ast_encode(struct vm_program *vprg, struct ast_node *root)
 out:
 	return rc;
 }
-
-#if 0
-/****/
-#define LOOP_ST_LABEL "loop_st%u:"
-#define LOOP_END_LABEL "loop_end%u:"
-
-static int loop_no = 0;
-/**
- pushl $num
-loop_st:
- dup 
- jz loop_end;
- */
-int encode_loop_start(struct vm_program *vprg)
-{
-	int ret;
-	char label[20];
-	union cmd_arg arg;
-
-	snprintf(label, sizeof label, LOOP_ST_LABEL, loop_no);
-	ret = vm_label_resolve(vprg, label);
-	if (ret)
-		return ret;
-
-	/* arg not used */
-	ret = vm_encode(vprg, VM_CMD_DUP, arg);
-	if (ret)
-		return ret;
-
-	snprintf(label, sizeof label, LOOP_END_LABEL, loop_no);
-	arg.cd_string = label;
-	return vm_encode(vprg, VM_CMD_JZ, arg);
-}
-/**
- pushl 1
- sub
- goto loop_st:
-loop_end:
- */
-int encode_loop_end(struct vm_program *vprg)
-{
-	int ret;
-	union cmd_arg arg;
-	char label[20];
-
-	arg.cd_long = 1;
-	ret = vm_encode(vprg, VM_CMD_PUSHL, arg);
-	if (ret)
-		return ret;
-
-	/* arg non used */
-	ret = vm_encode(vprg, VM_CMD_SUB, arg);
-	if (ret)
-		return ret;
-
-	snprintf(label, sizeof label, LOOP_ST_LABEL, loop_no);
-	arg.cd_string = label;
-	ret = vm_encode(vprg, VM_CMD_GOTO, arg);
-	if (ret)
-		return ret;
-
-	snprintf(label, sizeof label, LOOP_END_LABEL, loop_no);
-	loop_no ++;
-
-	return vm_label_resolve(vprg, label);
-}
-
-/**
- dup
- push $exp
- if
- jz exit
- pop (nop)
- */
-int encode_expected(struct vm_program *vprg, int exp)
-{
-	int ret;
-	union cmd_arg arg;
-
-	/* dup need to read status on finish */
-	/* arg not used */
-	ret = vm_encode(vprg, VM_CMD_DUP, arg);
-	if (ret)
-		return ret;
-
-	arg.cd_long = 0;
-	ret = vm_encode(vprg, VM_CMD_PUSHL, arg);
-	if (ret)
-		return ret;
-
-	/* arg not used */
-	ret = vm_encode(vprg, VM_CMD_CMPL, arg);
-	if (ret)
-		return ret;
-
-	arg.cd_string = END_LABEL;
-	ret = vm_encode(vprg, exp == VM_RET_OK ? VM_CMD_JNZ : VM_CMD_JZ, arg);
-	if (ret)
-		return ret;
-
-	/* return code same as expected, drop it */
-	ret = vm_encode(vprg, VM_CMD_NOP, arg);
-	if (ret)
-		return ret;
-
-	return ret;
-}
-
-/**
- create tmp_name; mkdir ; cd;
- */
-int encode_make_workdir(struct vm_program *vprg, int mode)
-{
-	char name[256] = {0};
-	int ret;
-	union cmd_arg arg;
-
-	strcpy(name, "workd-XXXXXXX");
-	arg.cd_string = name;
-	ret = vm_encode(vprg, VM_CMD_PUSHS, arg);
-	if (ret < 0)
-		return ret;
-
-	arg.cd_call = VM_SYS_TMPNAME;
-	ret = vm_encode(vprg, VM_CMD_CALL, arg);
-	if (ret < 0)
-		return ret;
-
-	ret = vm_encode(vprg, VM_CMD_DUP, arg);
-	if (ret)
-		return ret;
-
-	arg.cd_long = mode;
-	ret = vm_encode(vprg, VM_CMD_PUSHL, arg);
-	if (ret)
-		return ret;
-
-	arg.cd_call = VM_MD_CALL_MKDIR;
-	ret = vm_encode(vprg, VM_CMD_CALL, arg);
-	if (ret < 0)
-		return ret;
-
-	ret = encode_expected(vprg, VM_RET_OK);
-	if (ret < 0)
-		return ret;
-
-	arg.cd_call = VM_MD_CALL_CD;
-	ret = vm_encode(vprg, VM_CMD_CALL, arg);
-	if (ret < 0)
-		return ret;
-
-	ret = encode_expected(vprg, VM_RET_OK);
-	if (ret < 0)
-		return ret;
-
-	return 0;
-}
-#endif
 
 
 /******************/

@@ -30,4 +30,9 @@ int stack_push(struct fifo *f, long data);
  */
 int stack_pop(struct fifo *f, long *data);
 
+/**
+ return current stack size
+ */
+int stack_size(struct fifo *f);
+
 #endif

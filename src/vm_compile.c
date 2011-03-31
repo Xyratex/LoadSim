@@ -260,7 +260,12 @@ static add_string_to_buffer(struct vm_program *vprg, char *str)
 {
 	int i;
 	int len;
+	int ret;
 
+	ret = add_long_to_buffer(vprg, strlen(str) + 1);
+	if (ret != 0)
+		return ret;
+	
 	len = strlen(str) + 1;
 	for(i = 0; i < len; i++) {
 		if (add_byte_to_buffer(vprg, str[i]))
@@ -271,6 +276,7 @@ static add_string_to_buffer(struct vm_program *vprg, char *str)
 
 static int enc_pushs(struct vm_program *vprg, union cmd_arg data)
 {
+	int ret;
 	DPRINT("pushs '%s'\n", data.cd_string);
 
 	return add_string_to_buffer(vprg, data.cd_string);
@@ -391,6 +397,17 @@ static int enc_putr(struct vm_program *vprg, union cmd_arg data)
 	return add_long_to_buffer(vprg, data.cd_long);
 }
 
+/**
+ XXX to encode.c
+*/
+static int enc_label(struct vm_program *vprg, union cmd_arg data)
+{
+	/* kill label from commands */
+	vprg->vmp_enc_idx --;
+
+	DPRINT("%s\n", data.cd_string);
+	return vm_label_resolve(vprg, data.cd_string);
+}
 
 const static enc_h_t en_helpers[VM_CMD_MAX] = {
 	[VM_CMD_PUSHS]	= enc_pushs,
@@ -408,6 +425,7 @@ const static enc_h_t en_helpers[VM_CMD_MAX] = {
 	[VM_CMD_NOP]	= enc_nop,
 	[VM_CMD_GETR]	= enc_getr,
 	[VM_CMD_PUTR]	= enc_putr,
+	[VM_CMD_LABEL]	= enc_label,
 };
 
 int vm_encode(struct vm_program *vprg, int line, enum vm_cmd cmd, union cmd_arg data)
@@ -424,3 +442,14 @@ int vm_encode(struct vm_program *vprg, int line, enum vm_cmd cmd, union cmd_arg 
 	return en_helpers[cmd](vprg, data);
 }
 
+int vm_cmd_want_string(enum vm_cmd cmd)
+{
+	if ((cmd == VM_CMD_PUSHS) ||
+	    (cmd == VM_CMD_GOTO)  ||
+	    (cmd == VM_CMD_JZ)    ||
+	    (cmd == VM_CMD_JNZ)   ||
+	    (cmd == VM_CMD_LABEL))
+		return 1;
+
+	return 0;
+}

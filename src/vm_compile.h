@@ -154,4 +154,9 @@ union cmd_arg {
 int vm_encode(struct vm_program *vprg, int line, enum vm_cmd cmd, union cmd_arg data);
 
 
+/**
+ XXX hack
+ */
+int vm_cmd_want_string(enum vm_cmd cmd);
+
 #endif

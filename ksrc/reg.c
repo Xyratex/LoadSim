@@ -2,6 +2,7 @@
 #include <linux/kernel.h>
 #include <linux/slab.h>
 
+#include "kdebug.h"
 #include "reg.h"
 
 struct reg_file {
@@ -36,6 +37,7 @@ int reg_file_get(struct reg_file *reg, long index, long *data)
 	if (!valid_index(reg, index))
 		return -ERANGE;
 
+	DPRINT("get reg %ld - %ld\n", index, reg->rf_data[index]);
 	*data = reg->rf_data[index];
 	return 0;
 }
@@ -46,6 +48,8 @@ int reg_file_put(struct reg_file *reg, long index, long data)
 		return -ERANGE;
 
 	reg->rf_data[index] = data;
+	DPRINT("put reg %ld - %ld\n", index, reg->rf_data[index]);
+
 	return 0;
 }
 

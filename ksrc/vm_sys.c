@@ -95,24 +95,115 @@ static int sys_call_race(struct simul_env *env, struct fifo *f, uint32_t *ip)
 
 static int sys_call_tmpname(struct simul_env *env, struct fifo *f, uint32_t *ip)
 {
+	char *dst;
 	char *prefix;
 	int len;
 	int i;
+
+	if (stack_pop(f, (long *)&dst) < 0)
+		return -ENODATA;
 
 	if (stack_pop(f, (long *)&prefix) < 0)
 		return -ENODATA;
 
 	len = strlen(prefix);
+	memcpy(dst, prefix, len + 1);
 	for (i = 0; i < len; i++) {
-		if (prefix[i] == 'X') {
+		if (dst[i] == 'X') {
 			unsigned char byte;
 
 			get_random_bytes(&byte, 1);
-			prefix[i] = '0' + (byte % 10);
+			dst[i] = '0' + (byte % 10);
 		}
 	}
 
-	return stack_push(f, (long)prefix);
+	return stack_push(f, (long)dst);
+}
+
+#define pbuf_enough(l)	((ptr + (l) - print_buff) < VM_STRING_SZ)
+static int sys_call_printf(struct simul_env *env, struct fifo *f, uint32_t *ip)
+{
+	char *format;
+	char *print_buff;
+	char *ptr;
+	int len;
+	int rc = 0;
+
+	if (stack_pop(f, (long *)&print_buff) < 0)
+		return -ENODATA;
+
+	if (stack_pop(f, (long *)&format) < 0)
+		return -ENODATA;
+
+	print_buff[VM_STRING_SZ] = '\0';
+	ptr = print_buff;
+	while(*format != '\0') {
+		if (*format != '%') {
+			*ptr = *format;
+			ptr ++;
+			goto next_ch;
+		}
+		
+		format++;
+		switch(*format) {
+		case 's': {
+			char *data;
+			if (stack_pop(f, (long *)&data) < 0) {
+				rc = -ENODATA;
+				break;
+			}
+
+			len = snprintf(ptr, 0, "%s", data);
+			if (!pbuf_enough(len)) {
+				rc = -EOVERFLOW;
+				break;
+			}
+			sprintf(ptr, "%s", data);
+			ptr += len;
+			break;
+		}
+		case 'd': {
+			long data;
+			if (stack_pop(f, &data) < 0) {
+				rc = -ENODATA;
+				break;
+			}
+			len = snprintf(ptr, 0, "%ld", data);
+			if (!pbuf_enough(len)) {
+				rc = -EOVERFLOW;
+				break;
+			}
+			sprintf(ptr, "%ld", data);
+			ptr += len;
+			break;
+		}
+		case 'u': {
+			long data;
+			if (stack_pop(f, &data) < 0) {
+				rc = -ENODATA;
+				break;
+			}
+			len = snprintf(ptr, 0, "%lu", data);
+			if (!pbuf_enough(len)) {
+				rc = -EOVERFLOW;
+				break;
+			}
+			sprintf(ptr, "%lu", data);
+			ptr += len;
+			break;
+		}
+		default:
+			break;
+		}
+next_ch:
+		format++;
+	}
+	*ptr = '\0';
+
+	if (rc != 0)
+		return rc;
+	else
+		return stack_push(f, (long)&print_buff);
 }
 
 struct handler_reg sys_hld[] = {
@@ -121,6 +212,7 @@ struct handler_reg sys_hld[] = {
     {.hr_id = VM_SYS_SLEEP, .hr_func = sys_call_sleep },
     {.hr_id = VM_SYS_RACE, .hr_func = sys_call_race },
     {.hr_id = VM_SYS_TMPNAME, .hr_func = sys_call_tmpname },
+    {.hr_id = VM_SYS_PRINTF, .hr_func = sys_call_printf },
 };
 
 int sys_handlers_register()

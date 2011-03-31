@@ -16,6 +16,10 @@ enum {
 	 maximal races in system
 	*/
 	VM_MAX_RACES = 200,
+	/**
+	 max size for string
+	 */
+	VM_STRING_SZ = 256,
 };
 
 /**
@@ -61,6 +65,8 @@ enum vm_cmd {
 	VM_CMD_GETR	= 13,
 	/* put to register from a top of stack */
 	VM_CMD_PUTR	= 14,
+	/* label reference - same as NOP */
+	VM_CMD_LABEL	= 15,
 	VM_CMD_MAX,
 };
 
@@ -118,6 +124,10 @@ enum vm_sys_calls {
 	 generate unique name
 	 */
 	VM_SYS_TMPNAME  = 4,
+	/**
+	 printf like
+	 */
+	VM_SYS_PRINTF   = 5,
 	VM_SYS_CALL_MAX
 };
 

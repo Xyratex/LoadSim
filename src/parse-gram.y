@@ -29,22 +29,25 @@ void yyerror(const char *str);
 
 %token TOK_UID_CMD TOK_GID_CMD
 %token TOK_WAITRACE_CMD TOK_SLEEP_CMD
-%token TOK_TMPNAME
+%token TOK_TMPNAME TOK_PRINTF
 
 %token TOK_EXPECTED
 
 %token TOK_PROC_BEGIN TOK_PROC_END
 %token TOK_LOOP_BEGIN TOK_LOOP_END
+%token TOK_WHILE_BEGIN TOK_WHILE_END
 
 %token TOK_SERVER TOK_CLIENT
 
 %type<intval> calc_o_flags
 
 %type<node> proc_body proc_commands 
-%type<node> statements expression var tmpname
+%type<node> statements expression var
 %type<node> open_flags
 
-%type<node> loop loop_body
+%type<node> loops
+// %type<node> loop loop_body
+%type<node> while_loop while_begin while_body while_end
 
 %type<node> md_ops misc_ops md_cmd expected
 %type<node> cd_cmd mkdir_cmd readdir_cmd unlink_cmd open_cmd
@@ -53,6 +56,8 @@ void yyerror(const char *str);
 %type<node> readln_cmd rename_cmd
 
 %type<node> wait_race sleep chuid chgid 
+%type<node> tmpname printf
+%type<node> arg_list 
 
 
 %left	'|'
@@ -163,13 +168,10 @@ proc_end:
 	;
 
 proc_body:
-	proc_commands { $$ = $1; }
+	proc_commands
 	| proc_body proc_commands
 	{
-		union cmd_arg arg;
-		arg.cd_long = 0;
-
-		$$ = ast_op(yylloc.first_line, VM_CMD_NOP, arg, AST_TYPE_NONE, 2, $1, $2);
+		$$ = ast_op_link(yylloc.first_line, $1, $2);
 		if($$ == NULL)
 			YYABORT;
 	}
@@ -184,7 +186,7 @@ proc_body:
 proc_commands:
 	  md_ops
 	| misc_ops
-	| loop
+	| loops
 	| var
 	{
 		$$ = $1;
@@ -192,49 +194,58 @@ proc_commands:
 	;
 
 
-/**
- loop format is
+loops: 
+	while_loop
+	{
+		$$ = $1;
+	}
 
- do
+/**
+ "while" loop format is
+
+ while ($statement)
   .. come operation
- loop $number
+ endw
 
  where is $number is number of runs
 */
-loop:
-	loop_begin loop_body loop_end
+while_loop:
+	while_begin while_body while_end
 	{
 		union cmd_arg arg;
 		arg.cd_long = 0;
 
-		$$ = ast_op(yylloc.first_line, VM_CMD_NOP, arg, AST_TYPE_NONE, 1, $2);
+		$$ = ast_op(yylloc.first_line, VM_CMD_NOP, arg, AST_TYPE_NONE, 3, $1, $2,$3);
 		if($$ == NULL)
 			YYABORT;
 	}
 	;
 
-loop_begin:
-	TOK_LOOP_BEGIN TOK_NUMBER
+while_begin:
+	TOK_WHILE_BEGIN expression
 	{
+		$$ = ast_op_while_start(yylloc.first_line, $2);
+		if($$ == NULL)
+			YYABORT;
 	}
 	;
 
-loop_body:
+while_body:
 	proc_commands
-	| loop_body proc_commands
+	| while_body proc_commands
 	{
-		union cmd_arg arg;
-		arg.cd_long = 0;
-
-		$$ = ast_op(yylloc.first_line, VM_CMD_NOP, arg, AST_TYPE_NONE, 2, $1, $2);
+		$$ = ast_op_link(yylloc.first_line, $1, $2);
 		if($$ == NULL)
 			YYABORT;
 	}
 	;
 
-loop_end:
-	TOK_LOOP_END 
+while_end:
+	TOK_WHILE_END
 	{
+		$$ = ast_op_while_end(yylloc.first_line);
+		if ($$ == NULL)
+			YYABORT;
 	}
 	;
 
@@ -363,15 +374,9 @@ chgid:
 md_ops:
 	md_cmd expected
 	{
-		union cmd_arg arg;
-		arg.cd_long = 0;
-
-		$$ = ast_op(yylloc.first_line, VM_CMD_NOP, arg, AST_TYPE_NONE,
-			    2, $1, $2);
+		$$ = ast_op_link(yylloc.first_line, $1, $2);
 		if($$ == NULL)
 			YYABORT;
-
-		printf("md_ops %p - / %p %p /\n", $$, $1, $2);
 	}
 	;
 
@@ -846,39 +851,73 @@ statements:
 	expression
 	| statements expression
 	{
-		union cmd_arg arg;
-		arg.cd_long = 0;
-
-		$$ = ast_op(yylloc.first_line, VM_CMD_NOP, arg, AST_TYPE_NONE, 2, $1, $2);
+		$$ = ast_op_link(yylloc.first_line, $1, $2);
 		if($$ == NULL)
 			YYABORT;
 	}
 	;
 	
 expression:
-	QSTRING		{ union cmd_arg arg; 
-			arg.cd_string = $1; 
-			$$ = ast_op(yylloc.first_line, VM_CMD_PUSHS, arg, AST_STRING, 0);
-			if ($$ == NULL)
-				YYABORT;
-			}
-	| TOK_NUMBER	{ union cmd_arg arg; 
-			arg.cd_long = $1;
-			$$ = ast_op(yylloc.first_line, VM_CMD_PUSHL, arg, AST_NUMBER, 0);
-			if ($$ == NULL)
-				YYABORT;
-			}
+	QSTRING	
+		{
+		union cmd_arg arg; 
+		arg.cd_string = $1; 
+		$$ = ast_op(yylloc.first_line, VM_CMD_PUSHS, arg, AST_STRING, 0);
+		if ($$ == NULL)
+			YYABORT;
+		}
+	| TOK_NUMBER
+		{ 
+		union cmd_arg arg; 
+		arg.cd_long = $1;
+		$$ = ast_op(yylloc.first_line, VM_CMD_PUSHL, arg, AST_NUMBER, 0);
+		if ($$ == NULL)
+			YYABORT;
+		}
 	| TOK_REGISTER  {
-			/* read register */
-			union cmd_arg arg; 
+		/* read register */
+		union cmd_arg arg; 
 
-			arg.cd_long = $1;
-			$$ = ast_op(yylloc.first_line, VM_CMD_GETR, arg, AST_REGISTER, 0);
-			if ($$ == NULL)
-				YYABORT;
-			}
+		arg.cd_long = $1;
+		$$ = ast_op(yylloc.first_line, VM_CMD_GETR, arg, AST_REGISTER, 0);
+		if ($$ == NULL)
+			YYABORT;
+		}
 	| '(' expression ')' { $$ = $2; }
+	| expression '+' expression
+		{
+		union cmd_arg arg; 
+		struct ast_node *call = NULL;
+		int ret;
+
+		ret = ast_check_type($1, AST_NUMBER);
+		ret += ast_check_type($3, AST_NUMBER);
+		if (ret == 2) {
+			arg.cd_long = 0;
+			call = ast_op(yylloc.first_line, VM_CMD_ADD, arg, AST_NUMBER, 2, $1, $3);
+		}
+		if (call == NULL)
+			YYABORT;
+		$$ = call;
+		}
+	| expression '-' expression
+		{
+		union cmd_arg arg; 
+		struct ast_node *call = NULL;
+		int ret;
+
+		ret = ast_check_type($1, AST_NUMBER);
+		ret += ast_check_type($3, AST_NUMBER);
+		if (ret == 2) {
+			arg.cd_long = 0;
+			call = ast_op(yylloc.first_line, VM_CMD_SUB, arg, AST_NUMBER, 2, $1, $3);
+		}
+		if (call == NULL)
+			YYABORT;
+		$$ = call;
+		}
 	| tmpname 	{ $$ = $1; }
+	| printf	{ $$ = $1; }
 	;
 
 var:
@@ -896,21 +935,62 @@ var:
 tmpname: TOK_TMPNAME expression
 	{
 		int ret;
-		struct ast_node *call;
+		struct ast_node *call = NULL;
+		struct ast_node *buff;
 		union cmd_arg arg;
 	
 		ret = ast_check_type($2, AST_STRING);
-		if (ret == 1) {
+		buff = ast_buffer(yylloc.first_line, VM_STRING_SZ);
+		if (ret == 1 && buff) {
 			arg.cd_call = VM_SYS_TMPNAME;
 			call = ast_op(yylloc.first_line,
 				      VM_CMD_CALL, arg, AST_STRING,
-				      1, $2);
+				      2, $2, buff);
 		}
-		if ((ret < 1) || (call == NULL))
+		if (call == NULL) {
+			if (buff != NULL)
+				ast_free(buff);
 			YYABORT;
+		}
 		$$ = call;
 	}
 	;
+
+printf: TOK_PRINTF expression '[' arg_list ']'
+	{
+		int ret;
+		struct ast_node *call = NULL;
+		struct ast_node *buff;
+		union cmd_arg arg;
+	
+		ret = ast_check_type($2, AST_STRING);
+		buff = ast_buffer(yylloc.first_line, VM_STRING_SZ);
+		if (ret == 1 && buff) {
+			arg.cd_call = VM_SYS_PRINTF;
+			/** need to put format expression as second argument
+			  to get it from stack first 
+			  */
+			call = ast_op(yylloc.first_line,
+				      VM_CMD_CALL, arg, AST_STRING,
+				      3, $4, $2, buff);
+		}
+		if (call == NULL) {
+			if (buff != NULL)
+				ast_free(buff);
+			YYABORT;
+		}
+		$$ = call;
+	}
+	;
+
+arg_list:
+	expression
+	| arg_list ',' expression
+	{
+		$$ = ast_op_link(yylloc.first_line, $1, $3);
+		if ($$ == NULL)
+			YYABORT;
+	}
 
 %%
 
