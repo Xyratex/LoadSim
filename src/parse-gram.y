@@ -46,7 +46,6 @@ void yyerror(const char *str);
 %type<node> open_flags
 
 %type<node> loops
-// %type<node> loop loop_body
 %type<node> while_loop while_begin while_body while_end
 
 %type<node> md_ops misc_ops md_cmd expected
@@ -59,6 +58,9 @@ void yyerror(const char *str);
 %type<node> tmpname printf
 %type<node> arg_list 
 
+%type<node> math 
+%type<node> logical
+%token TOK_L_EQ TOK_L_NE TOK_L_GR TOK_L_LOW TOK_L_GE TOK_L_LE
 
 %left	'|'
 
@@ -884,7 +886,14 @@ expression:
 			YYABORT;
 		}
 	| '(' expression ')' { $$ = $2; }
-	| expression '+' expression
+	| math { $$ = $1; }
+	| logical { $$ = $1; }
+	| tmpname 	{ $$ = $1; }
+	| printf	{ $$ = $1; }
+	;
+
+math:
+	expression '+' expression
 		{
 		union cmd_arg arg; 
 		struct ast_node *call = NULL;
@@ -916,9 +925,47 @@ expression:
 			YYABORT;
 		$$ = call;
 		}
-	| tmpname 	{ $$ = $1; }
-	| printf	{ $$ = $1; }
+        ;
+
+logical:
+	expression TOK_L_EQ expression 
+	{ 
+		$$ = ast_op_eq(yylloc.first_line, $1, $3);
+		if ($$ == NULL)
+			YYABORT;
+	} 
+	| expression TOK_L_NE expression 
+	{ 
+		$$ = ast_op_ne(yylloc.first_line, $1, $3);
+		if ($$ == NULL)
+			YYABORT;
+	} 
+	| expression TOK_L_GR expression 
+	{ 
+		$$ = ast_op_gr(yylloc.first_line, $1, $3);
+		if ($$ == NULL)
+			YYABORT;
+	}
+	| expression TOK_L_LOW expression
+	{ 
+		$$ = ast_op_low(yylloc.first_line, $1, $3);
+		if ($$ == NULL)
+			YYABORT;
+	}
+	| expression TOK_L_GE expression
+	{ 
+		$$ = ast_op_ge(yylloc.first_line, $1, $3);
+		if ($$ == NULL)
+			YYABORT;
+	}
+	| expression TOK_L_LE expression
+	{ 
+		$$ = ast_op_le(yylloc.first_line, $1, $3);
+		if ($$ == NULL)
+			YYABORT;
+	}
 	;
+        
 
 var:
 	TOK_REGISTER '=' expression

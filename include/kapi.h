@@ -1,6 +1,8 @@
 #ifndef _MDSIM_KAPI_H_
 #define _MDSIM_KAPI_H_
 
+#include "linux/ioctl.h"
+
 /**
  kernel to user application interface API
 
@@ -20,27 +22,8 @@
 
 #define SIMUL_DEV_NAME	"c2_ksim"
 
-/**
- kernel module implement a lots operations, which available via IOCTL call.
-*/
-enum simul_ops {
-	/**
-	 create a metadata client instance and upload program into kernel
-	*/
-	SIM_IOW_MDCLIENT	= 0x01,
-	/**
-	 run uploaded programs
-	 */
-	SIM_IOW_RUN,
-	/**
-	 get results after all tests a finished.
-	 @see struct simul_res
-	 */
-	SIM_IOW_RESULTS,
-};
-
 #ifndef __user
-#define __user
+#define __user 
 #endif
 
 /**
@@ -73,4 +56,29 @@ struct simul_ioctl_res {
 	uint64_t		*ss_time; /** < time to execute program in ms */
 	struct simul_stat_op __user *ss_stats; /** < fill by kernel */
 };
+
+/**
+ kernel module implement a lots operations, which available via IOCTL call.
+*/
+
+enum simul_ops {
+	/**
+	 create a metadata client instance and upload program into kernel
+	*/
+        SIM_IOW_MDCLIENT 	= _IOW('S',1, struct simul_ioctl_cli),
+	/**
+	 run uploaded programs
+	 */
+	SIM_IOW_RUN		= _IO('S', 2),
+	/**
+	 get results after all tests a finished.
+	 @see struct simul_res
+	 */
+	SIM_IOW_RESULTS		= _IOWR('S', 3, struct simul_ioctl_res)
+};
+
+#ifndef __user
+#define __user
+#endif
+
 #endif

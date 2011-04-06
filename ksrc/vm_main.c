@@ -96,6 +96,19 @@ const static vm_int_fn int_fn[VM_CMD_MAX] = {
 	[VM_CMD_NOP]   = NULL,
 	[VM_CMD_GETR]  = vm_getr,
 	[VM_CMD_PUTR]  = vm_putr,
+	[VM_CMD_LABEL] = NULL,
+	[VM_CMD_CMPL_EQ] = vm_cmpl_eq,
+	[VM_CMD_CMPL_NE]= vm_cmpl_ne,
+	[VM_CMD_CMPL_LOW]= vm_cmpl_low,
+	[VM_CMD_CMPL_GR]= vm_cmpl_gr,
+	[VM_CMD_CMPL_LE]= vm_cmpl_le,
+	[VM_CMD_CMPL_GE]= vm_cmpl_ge,
+	[VM_CMD_CMPS_EQ]= vm_cmps_eq,
+	[VM_CMD_CMPS_NE]= vm_cmps_ne,
+	[VM_CMD_CMPS_LOW]= vm_cmps_low,
+	[VM_CMD_CMPS_GR]= vm_cmps_gr,
+	[VM_CMD_CMPS_LE]= vm_cmps_le,
+	[VM_CMD_CMPS_GE]= vm_cmps_ge,
 };
 
 

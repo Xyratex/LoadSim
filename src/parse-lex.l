@@ -110,7 +110,6 @@ PRINTF		[p|P][r|R][i|I][n|N][t|T][f|F]
 
 EXPECTED	[e|E][x|X][p|P][e|E][c|C][t|T][e|E][d|D]
 
-STRING		({alpha}|{digit}|{special})+
 ID		{alpha}({alpha}|{digit})+
 
 REG		[$][R]{digit}
@@ -242,10 +241,24 @@ REG		[$][R]{digit}
 \|		{ return yytext[0]; }
 ":"		{ return yytext[0]; }
 "="		{ return yytext[0]; }
+
 "+"		{ return yytext[0]; }
 "-"		{ return yytext[0]; }
+"/"		{ return yytext[0]; }
+"*"		{ return yytext[0]; }
+
 "["		{ return yytext[0]; }
 "]"		{ return yytext[0]; }
+"("		{ return yytext[0]; }
+")"		{ return yytext[0]; }
+
+"=="		{ return TOK_L_EQ; }
+"!="		{ return TOK_L_NE; }
+">"		{ return TOK_L_GR; }
+"<"		{ return TOK_L_LOW;}
+">="		{ return TOK_L_GE; }
+"<="		{ return TOK_L_LE; }
+
 {ID}		{ yylval.strval = strdup(yytext); return TOK_ID; }
 
 %%

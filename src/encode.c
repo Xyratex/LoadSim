@@ -22,10 +22,15 @@ struct ast_node {
 int ast_check_type(struct ast_node *arg, enum ast_type type)
 {
 	if(type == AST_REGISTER || arg->an_type == AST_REGISTER ||
-	       arg->an_type == type)
+	   arg->an_type == type)
 		return 1;
 	else
 		return 0;
+}
+
+int ast_args_compatible(struct ast_node *arg1, struct ast_node *arg2)
+{
+	return ast_check_type(arg1, arg2->an_type);
 }
 
 struct ast_node *ast_op_link(int line, struct ast_node *child1, struct ast_node *child2)
@@ -202,6 +207,9 @@ struct ast_node *ast_op_while_end(int line)
 	if (label == NULL)
 		goto out2;
 
+	snprintf(label, while_end_sz(), WHILE_END_LABEL, while_no);
+	arg.cd_string = label;
+
 	arg.cd_string = label;
 	cmd2 = ast_op(line, VM_CMD_LABEL, arg, AST_TYPE_NONE, 1, cmd1);
 	if (cmd2 == NULL)
@@ -277,6 +285,7 @@ struct vm_program *procedure_current(void)
 int procedure_end(void)
 {
 	int ret;
+	#warning fix return code
 #if 0
 	union cmd_arg arg;
 

@@ -39,18 +39,23 @@ int vm_pushl(struct stack_vm *vm, void *args)
  compare string, result on top fifo
  VM_CMD_CMPS
 */
-int vm_cmps(struct stack_vm *vm, void *args)
+int _vm_cmps(struct stack_vm *vm, void *args)
 {
 	long a;
 	long b;
-	long rc;
 
 	if ((stack_pop(vm->sv_stack, &a) < 0) ||
             (stack_pop(vm->sv_stack, &b) < 0))
 		return -ENODATA;
 
-	rc = strcmp((char *)a, (char *)b);
+	return strcmp((char *)a, (char *)b);
+}
 
+int vm_cmps(struct stack_vm *vm, void *args)
+{
+	int rc;
+
+	rc = _vm_cmps(vm, args);
 	return stack_push(vm->sv_stack, rc);
 }
 
@@ -58,7 +63,7 @@ int vm_cmps(struct stack_vm *vm, void *args)
  compare long's, result on top fifo
  VM_CMD_CMPL
 */
-int vm_cmpl(struct stack_vm *vm, void *args)
+int _vm_cmpl(struct stack_vm *vm, void *args)
 {
 	long a;
 	long b;
@@ -74,7 +79,14 @@ int vm_cmpl(struct stack_vm *vm, void *args)
 		rc = 0;
 	     else
 		rc = -1;
+	return rc;
+}
 
+int vm_cmpl(struct stack_vm *vm, void *args)
+{
+	int rc;
+
+	rc = _vm_cmpl(vm, args);
 	return stack_push(vm->sv_stack, rc);
 }
 
@@ -237,3 +249,102 @@ int vm_getr(struct stack_vm *vm, void *args)
 
 	return ret;
 }
+
+int vm_cmps_eq(struct stack_vm *vm, void *args)
+{
+	int rc;
+
+	rc = _vm_cmps(vm, args);
+	return stack_push(vm->sv_stack, rc == 0 ? 1 : 0);
+}
+
+int vm_cmps_ne(struct stack_vm *vm, void *args)
+{
+	int rc;
+
+	rc = _vm_cmps(vm, args);
+	return stack_push(vm->sv_stack, rc != 0 ? 1 : 0);
+}
+
+int vm_cmps_gr(struct stack_vm *vm, void *args)
+{
+	int rc;
+
+	rc = _vm_cmps(vm, args);
+	return stack_push(vm->sv_stack, rc > 0 ? 1 : 0);
+}
+
+int vm_cmps_low(struct stack_vm *vm, void *args)
+{
+	int rc;
+
+	rc = _vm_cmps(vm, args);
+	return stack_push(vm->sv_stack, rc < 0 ? 1 : 0);
+}
+
+int vm_cmps_ge(struct stack_vm *vm, void *args)
+{
+	int rc;
+
+	rc = _vm_cmps(vm, args);
+	return stack_push(vm->sv_stack, rc >= 0 ? 1 : 0);
+}
+
+int vm_cmps_le(struct stack_vm *vm, void *args)
+{
+	int rc;
+
+	rc = _vm_cmps(vm, args);
+	return stack_push(vm->sv_stack, rc <= 0 ? 1 : 0);
+}
+
+/***********/
+int vm_cmpl_eq(struct stack_vm *vm, void *args)
+{
+	int rc;
+
+	rc = _vm_cmpl(vm, args);
+	return stack_push(vm->sv_stack, rc == 0 ? 1 : 0);
+}
+
+int vm_cmpl_ne(struct stack_vm *vm, void *args)
+{
+	int rc;
+
+	rc = _vm_cmpl(vm, args);
+	return stack_push(vm->sv_stack, rc != 0 ? 1 : 0);
+}
+
+int vm_cmpl_gr(struct stack_vm *vm, void *args)
+{
+	int rc;
+
+	rc = _vm_cmpl(vm, args);
+	return stack_push(vm->sv_stack, rc > 0 ? 1 : 0);
+}
+
+int vm_cmpl_low(struct stack_vm *vm, void *args)
+{
+	int rc;
+
+	rc = _vm_cmpl(vm, args);
+	return stack_push(vm->sv_stack, rc < 0 ? 1 : 0);
+}
+
+int vm_cmpl_ge(struct stack_vm *vm, void *args)
+{
+	int rc;
+
+	rc = _vm_cmpl(vm, args);
+	return stack_push(vm->sv_stack, rc >= 0 ? 1 : 0);
+}
+
+int vm_cmpl_le(struct stack_vm *vm, void *args)
+{
+	int rc;
+
+	rc = _vm_cmpl(vm, args);
+	return stack_push(vm->sv_stack, rc <= 0 ? 1 : 0);
+}
+
+

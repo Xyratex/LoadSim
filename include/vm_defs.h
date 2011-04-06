@@ -39,34 +39,48 @@ enum vm_cmd {
 	VM_CMD_PUSHS	= 0,
 	/* push long */
 	VM_CMD_PUSHL	= 1,
+	VM_CMD_PUSHA	= 2,
 	/* compare string, result on top FIFO */
-	VM_CMD_CMPS	= 2,
+	VM_CMD_CMPS	= 3,
 	/* compare long's, result on top FIFO */
-	VM_CMD_CMPL	= 3,
+	VM_CMD_CMPL	= 4,
 	/* call handler, function id on top FIFO */
-	VM_CMD_CALL	= 4,
+	VM_CMD_CALL	= 5,
 	/* goto, address on top of stack */
-	VM_CMD_GOTO	= 5,
+	VM_CMD_GOTO	= 6,
 	/* jump if equal or zero, results on top of stack */
-	VM_CMD_JZ	= 6,
+	VM_CMD_JZ	= 7,
 	/* jump if not zero or equal*/
-	VM_CMD_JNZ	= 7,
+	VM_CMD_JNZ	= 8,
 	/* a + b */
-	VM_CMD_ADD	= 8,
+	VM_CMD_ADD	= 9,
 	/* a - b */
-	VM_CMD_SUB	= 9,
+	VM_CMD_SUB	= 10,
 	/* duplicate data on stack top */
-	VM_CMD_DUP	= 10,
+	VM_CMD_DUP	= 11,
 	/* just remove entry on stack top */
-	VM_CMD_UP	= 11,
+	VM_CMD_UP	= 12,
 	/* link in AST tree */
-	VM_CMD_NOP	= 12,
+	VM_CMD_NOP	= 14,
 	/* get from register to top of stack */
-	VM_CMD_GETR	= 13,
+	VM_CMD_GETR	= 15,
 	/* put to register from a top of stack */
-	VM_CMD_PUTR	= 14,
+	VM_CMD_PUTR	= 16,
 	/* label reference - same as NOP */
-	VM_CMD_LABEL	= 15,
+	VM_CMD_LABEL	= 17,
+	VM_CMD_CMPL_EQ	= 18,
+	VM_CMD_CMPL_NE	= 19,
+	VM_CMD_CMPL_LOW	= 20,
+	VM_CMD_CMPL_GR	= 21,
+	VM_CMD_CMPL_LE	= 22,
+	VM_CMD_CMPL_GE	= 23,
+	VM_CMD_CMPS_EQ	= 24,
+	VM_CMD_CMPS_NE	= 25,
+	VM_CMD_CMPS_LOW	= 26,
+	VM_CMD_CMPS_GR	= 27,
+	VM_CMD_CMPS_LE	= 28,
+	VM_CMD_CMPS_GE	= 29,
+
 	VM_CMD_MAX,
 };
 

@@ -3,6 +3,11 @@
 
 #include <vm_compile.h>
 
+struct sim_arr {
+	int size;
+	char *data;
+};
+
 /**
  Module implenting a Abstract Sytax Tree (AST) for a program
  that tree used to converting expressions to correct order of operations.
@@ -28,6 +33,15 @@ struct vm_program;
  \retval 0 - if node is incompatible
 */
 int ast_check_type(struct ast_node *arg, enum ast_type type);
+
+/**
+ is two args has a compatible types.
+ 
+ \retval 1 - if node compatible with requested type
+ \retval 0 - if node is incompatible
+*/
+int ast_args_compatible(struct ast_node *arg1, struct ast_node *arg2);
+
 /**
  add operations into AST
 */
@@ -57,6 +71,35 @@ struct ast_node *ast_op_while_end(int line);
  generate tree for "expected" part
  */
 struct ast_node *ast_op_expected(int line, int val);
+
+/**
+ logical operation.
+ see encode_expr.c
+ */
+/** 
+ OP ==
+*/
+struct ast_node *ast_op_eq(int line, struct ast_node *var1, struct ast_node *var3);
+/**
+ OP !=
+ */
+struct ast_node *ast_op_ne(int line, struct ast_node *var1, struct ast_node *var3);
+/**
+ OP >
+ */
+struct ast_node *ast_op_gr(int line, struct ast_node *var1, struct ast_node *var3);
+/**
+ OP <
+ */
+struct ast_node *ast_op_low(int line, struct ast_node *var1, struct ast_node *var3);
+/**
+ OP <=
+ */
+struct ast_node *ast_op_le(int line, struct ast_node *var1, struct ast_node *var3);
+/**
+ OP >=
+ */
+struct ast_node *ast_op_ge(int line, struct ast_node *var1, struct ast_node *var3);
 
 
 

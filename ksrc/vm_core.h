@@ -94,5 +94,39 @@ int vm_getr(struct stack_vm *vm, void *args);
 */
 int vm_putr(struct stack_vm *vm, void *args);
 
+/** strings */
+/**
+ ==
+ */
+int vm_cmps_eq(struct stack_vm *vm, void *args);
+/**
+ !=
+ */
+int vm_cmps_ne(struct stack_vm *vm, void *args);
+/**
+ >
+ */
+int vm_cmps_gr(struct stack_vm *vm, void *args);
+/**
+ <
+ */
+int vm_cmps_low(struct stack_vm *vm, void *args);
+/**
+ >=
+ */
+int vm_cmps_ge(struct stack_vm *vm, void *args);
+/**
+ <=
+ */
+int vm_cmps_le(struct stack_vm *vm, void *args);
+
+/** numbers */
+int vm_cmpl_eq(struct stack_vm *vm, void *args);
+int vm_cmpl_ne(struct stack_vm *vm, void *args);
+int vm_cmpl_gr(struct stack_vm *vm, void *args);
+int vm_cmpl_low(struct stack_vm *vm, void *args);
+int vm_cmpl_ge(struct stack_vm *vm, void *args);
+int vm_cmpl_le(struct stack_vm *vm, void *args);
+
 
 #endif

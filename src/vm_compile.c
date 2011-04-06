@@ -256,54 +256,54 @@ static int add_long_to_buffer(struct vm_program *vprg, long ldata)
 	return 0;
 }
 
-static add_string_to_buffer(struct vm_program *vprg, char *str)
+
+static int add_array_to_buffer(struct vm_program *vprg, int size, char *data)
 {
 	int i;
 	int len;
 	int ret;
 
-	ret = add_long_to_buffer(vprg, strlen(str) + 1);
+	ret = add_long_to_buffer(vprg, size);
 	if (ret != 0)
 		return ret;
-	
-	len = strlen(str) + 1;
-	for(i = 0; i < len; i++) {
-		if (add_byte_to_buffer(vprg, str[i]))
+
+	for(i = 0; i < size; i++) {
+		if (add_byte_to_buffer(vprg, data ? data[i] : '\0'))
 			return -ENOMEM;
 	}
 	return 0;
 }
 
+static int add_string_to_buffer(struct vm_program *vprg, char *str)
+{
+	return add_array_to_buffer(vprg, strlen(str) + 1, str);
+}
+
 static int enc_pushs(struct vm_program *vprg, union cmd_arg data)
 {
 	int ret;
-	DPRINT("pushs '%s'\n", data.cd_string);
+	DPRINT("'%s'", data.cd_string);
 
 	return add_string_to_buffer(vprg, data.cd_string);
 }
 
 static int enc_pushl(struct vm_program *vprg, union cmd_arg data)
 {
-	DPRINT("pushl %lu\n", data.cd_long);
+	DPRINT("%lu", data.cd_long);
 
 	return add_long_to_buffer(vprg, data.cd_long);
 }
 
-static int enc_cmps(struct vm_program *vprg, union cmd_arg data)
+static int enc_pusha(struct vm_program *vprg, union cmd_arg data)
 {
-	DPRINT("cmps\n");
-	return 0;
-}
+//	DPRINT("pusha %lu\n", data.cd_arr.size);
 
-static int enc_cmpl(struct vm_program *vprg, union cmd_arg data)
-{
-	DPRINT("cmpl\n");
-	return 0;
+//	return add_array_to_buffer(vprg, data.cd_arr.size, data.cd_arr.data);
 }
 
 static int enc_call(struct vm_program *vprg, union cmd_arg data)
 {
-	DPRINT("call [%d]\n", data.cd_call);
+	DPRINT("[%d]", data.cd_call);
 
 	return add_long_to_buffer(vprg, data.cd_call);
 }
@@ -311,7 +311,7 @@ static int enc_call(struct vm_program *vprg, union cmd_arg data)
 static int enc_goto(struct vm_program *vprg, union cmd_arg data)
 {
 	struct vm_label *l;
-	DPRINT("goto %s\n", data.cd_string);
+	DPRINT("%s", data.cd_string);
 
 	l = vm_label_find(vprg, data.cd_string);
 	if (l == NULL)
@@ -323,7 +323,7 @@ static int enc_goto(struct vm_program *vprg, union cmd_arg data)
 static int enc_jz(struct vm_program *vprg, union cmd_arg data)
 {
 	struct vm_label *l;
-	DPRINT("jz %s\n", data.cd_string);
+	DPRINT("%s", data.cd_string);
 
 	l = vm_label_find(vprg, data.cd_string);
 	if (l == NULL)
@@ -335,7 +335,7 @@ static int enc_jz(struct vm_program *vprg, union cmd_arg data)
 static int enc_jnz(struct vm_program *vprg, union cmd_arg data)
 {
 	struct vm_label *l;
-	DPRINT("jnz %s\n", data.cd_string);
+	DPRINT("%s", data.cd_string);
 
 	l = vm_label_find(vprg, data.cd_string);
 	if (l == NULL)
@@ -344,34 +344,13 @@ static int enc_jnz(struct vm_program *vprg, union cmd_arg data)
 	return add_long_to_buffer(vprg, l->vl_addr);
 }
 
-static int enc_add(struct vm_program *vprg, union cmd_arg data)
+static int enc_none(struct vm_program *vprg, union cmd_arg data)
 {
-	DPRINT("add\n");
-	return 0;
-}
-
-static int enc_sub(struct vm_program *vprg, union cmd_arg data)
-{
-	DPRINT("sub\n");
-	return 0;
-}
-
-static int enc_dup(struct vm_program *vprg, union cmd_arg data)
-{
-	DPRINT("dup\n");
-	return 0;
-}
-
-static int enc_up(struct vm_program *vprg, union cmd_arg data)
-{
-	DPRINT("up\n");
 	return 0;
 }
 
 static int enc_nop(struct vm_program *vprg, union cmd_arg data)
 {
-	DPRINT("nop\n");
-
 	/* kill nop from commands */
 	vprg->vmp_enc_idx --;
 	return 0;
@@ -379,7 +358,7 @@ static int enc_nop(struct vm_program *vprg, union cmd_arg data)
 
 static int enc_getr(struct vm_program *vprg, union cmd_arg data)
 {
-	DPRINT("getr %lu\n", data.cd_long);
+	DPRINT(" %lu", data.cd_long);
 
 	if (vprg->vmp_regs < data.cd_long)
 		vprg->vmp_regs = data.cd_long;
@@ -389,7 +368,7 @@ static int enc_getr(struct vm_program *vprg, union cmd_arg data)
 
 static int enc_putr(struct vm_program *vprg, union cmd_arg data)
 {
-	DPRINT("putr %lu\n", data.cd_long);
+	DPRINT("%lu", data.cd_long);
 
 	if (vprg->vmp_regs < data.cd_long)
 		vprg->vmp_regs = data.cd_long;
@@ -405,27 +384,44 @@ static int enc_label(struct vm_program *vprg, union cmd_arg data)
 	/* kill label from commands */
 	vprg->vmp_enc_idx --;
 
-	DPRINT("%s\n", data.cd_string);
 	return vm_label_resolve(vprg, data.cd_string);
 }
 
-const static enc_h_t en_helpers[VM_CMD_MAX] = {
-	[VM_CMD_PUSHS]	= enc_pushs,
-	[VM_CMD_PUSHL]	= enc_pushl,
-	[VM_CMD_CMPS]	= enc_cmps,
-	[VM_CMD_CMPL]	= enc_cmpl,
-	[VM_CMD_CALL]	= enc_call,
-	[VM_CMD_GOTO]	= enc_goto,
-	[VM_CMD_JZ]	= enc_jz,
-	[VM_CMD_JNZ]	= enc_jnz,
-	[VM_CMD_ADD]	= enc_add,
-	[VM_CMD_SUB]	= enc_sub,
-	[VM_CMD_DUP]	= enc_dup,
-	[VM_CMD_UP]	= enc_up,
-	[VM_CMD_NOP]	= enc_nop,
-	[VM_CMD_GETR]	= enc_getr,
-	[VM_CMD_PUTR]	= enc_putr,
-	[VM_CMD_LABEL]	= enc_label,
+struct vcmd {
+	const char 	*name;
+	enc_h_t		help;
+};
+
+const static struct vcmd en_helpers[VM_CMD_MAX] = {
+	[VM_CMD_PUSHS]	= { "PUSHS", enc_pushs},
+	[VM_CMD_PUSHL]	= { "PUSHL", enc_pushl},
+	[VM_CMD_PUSHA]	= { "PUSHA", enc_pusha},
+	[VM_CMD_CMPS]	= { "CMPS", enc_none},
+	[VM_CMD_CMPL]	= { "CMPL", enc_none},
+	[VM_CMD_CALL]	= { "CALL", enc_call},
+	[VM_CMD_GOTO]	= { "GOTO", enc_goto},
+	[VM_CMD_JZ]	= { "JZ", enc_jz},
+	[VM_CMD_JNZ]	= { "JNZ", enc_jnz},
+	[VM_CMD_ADD]	= { "ADD", enc_none},
+	[VM_CMD_SUB]	= { "SUB", enc_none},
+	[VM_CMD_DUP]	= { "DUP", enc_none},
+	[VM_CMD_UP]	= { "UP", enc_none},
+	[VM_CMD_NOP]	= { "NOP", enc_nop},
+	[VM_CMD_GETR]	= { "GETR", enc_getr},
+	[VM_CMD_PUTR]	= { "PUTR", enc_putr},
+	[VM_CMD_LABEL]	= { "", enc_label},
+	[VM_CMD_CMPL_EQ] = {"CMPL_EQ", enc_none},
+	[VM_CMD_CMPL_NE]= {"CMPL_NE", enc_none},
+	[VM_CMD_CMPL_LOW]= { "CMPL_LOW", enc_none},
+	[VM_CMD_CMPL_GR]= { "CMPL_GR", enc_none},
+	[VM_CMD_CMPL_LE]= { "CMPL_LE", enc_none},
+	[VM_CMD_CMPL_GE]= { "CMPL_GE", enc_none},
+	[VM_CMD_CMPS_EQ]= { "CMPS_EQ", enc_none},
+	[VM_CMD_CMPS_NE]= { "CMPS_NE", enc_none},
+	[VM_CMD_CMPS_LOW]={ "CMPS_LOW", enc_none},
+	[VM_CMD_CMPS_GR]= { "CMPS_GR", enc_none},
+	[VM_CMD_CMPS_LE]= { "CMPS_LE", enc_none},
+	[VM_CMD_CMPS_GE]= { "CMPS_GE", enc_none},
 };
 
 int vm_encode(struct vm_program *vprg, int line, enum vm_cmd cmd, union cmd_arg data)
@@ -435,11 +431,15 @@ int vm_encode(struct vm_program *vprg, int line, enum vm_cmd cmd, union cmd_arg 
 	if (cmd > VM_CMD_MAX)
 		return -EINVAL;
 
+	DPRINT("%s ", en_helpers[cmd].name);
 	rc = add_byte_to_buffer(vprg, cmd);
 	if (rc)
-		return rc;
+		goto out;
 
-	return en_helpers[cmd](vprg, data);
+	rc = en_helpers[cmd].help(vprg, data);
+out:
+	DPRINT("\n");
+	return rc;
 }
 
 int vm_cmd_want_string(enum vm_cmd cmd)
