@@ -285,16 +285,7 @@ struct vm_program *procedure_current(void)
 int procedure_end(void)
 {
 	int ret;
-	#warning fix return code
-#if 0
-	union cmd_arg arg;
 
-	/* program return code if finished ok */
-	arg.cd_long = 0;
-	ret = vm_encode(vprg, VM_CMD_PUSHL, arg);
-	if (ret)
-		return ret;
-#endif
 	ret = vm_label_resolve(vprg, END_LABEL);
 	if (ret)
 		return ret;

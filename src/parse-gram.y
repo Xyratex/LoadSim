@@ -41,7 +41,7 @@ void yyerror(const char *str);
 
 %type<intval> calc_o_flags
 
-%type<node> proc_body proc_commands 
+%type<node> proc_body proc_end proc_commands 
 %type<node> statements expression var
 %type<node> open_flags
 
@@ -138,9 +138,18 @@ procedure:
 	proc_begin proc_body proc_end
 	{
 		int ret;
+		struct ast_node *proc;
 
-		ret = ast_encode(procedure_current(), $2);
-		ast_free($2);
+		proc = ast_op_link(yylloc.first_line, $3, $2);
+		if(proc == NULL)
+			YYABORT;
+
+		ret = ast_encode(procedure_current(), proc);
+		ast_free(proc);
+		if (ret)
+			YYABORT;
+		
+		ret = procedure_end();
 		if (ret)
 			YYABORT;
 	}
@@ -161,10 +170,11 @@ proc_begin:
 proc_end:
 	TOK_PROC_END
 	{
-		int ret;
-
-		ret = procedure_end();
-		if (ret)
+		/* return code */
+		union cmd_arg arg; 
+		arg.cd_long = 0;
+		$$ = ast_op(yylloc.first_line, VM_CMD_PUSHL, arg, AST_NUMBER, 0);
+		if ($$ == NULL)
 			YYABORT;
 	}
 	;
