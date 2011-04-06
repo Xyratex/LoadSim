@@ -137,6 +137,7 @@ static int sys_call_printf(struct simul_env *env, struct fifo *f, uint32_t *ip)
 
 	print_buff[VM_STRING_SZ] = '\0';
 	ptr = print_buff;
+	DPRINT("format %s\n", format);
 	while(*format != '\0') {
 		if (*format != '%') {
 			*ptr = *format;
@@ -173,6 +174,7 @@ static int sys_call_printf(struct simul_env *env, struct fifo *f, uint32_t *ip)
 				rc = -EOVERFLOW;
 				break;
 			}
+			DPRINT("long %ld\n", data);
 			sprintf(ptr, "%ld", data);
 			ptr += len;
 			break;
@@ -203,7 +205,7 @@ next_ch:
 	if (rc != 0)
 		return rc;
 	else
-		return stack_push(f, (long)&print_buff);
+		return stack_push(f, (long)print_buff);
 }
 
 struct handler_reg sys_hld[] = {
