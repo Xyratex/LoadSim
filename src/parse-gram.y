@@ -560,7 +560,7 @@ open_cmd:
 			arg.cd_call = VM_MD_CALL_OPEN;
 			call = ast_op(yylloc.first_line,
 				      VM_CMD_CALL, arg, AST_NUMBER,
-				      4, $2, $3, $4, $5);
+				      4, $5, $4, $3, $2);
 		}
 		if ((ret < 4) || (call == NULL))
 			YYABORT;
@@ -671,10 +671,11 @@ chmod_cmd:
 		ret = ast_check_type($2, AST_STRING);
 		ret += ast_check_type($3, AST_NUMBER);
 		if (ret == 2) {
+			/* read mode / name */
 			arg.cd_call = VM_MD_CALL_CHMOD;
 			call = ast_op(yylloc.first_line,
 				      VM_CMD_CALL, arg, AST_NUMBER,
-				      2, $2, $3);
+				      2, $3, $2);
 		}
 		if ((ret < 2) || (call == NULL))
 			YYABORT;
@@ -696,7 +697,7 @@ chown_cmd:
 			arg.cd_call = VM_MD_CALL_CHOWN;
 			call = ast_op(yylloc.first_line,
 				      VM_CMD_CALL, arg, AST_NUMBER,
-				      3, $2, $3, $5);
+				      3, $5, $3, $2);
 		}
 		if ((ret < 3) || (call == NULL))
 			YYABORT;
@@ -717,7 +718,7 @@ chtime_cmd:
 			arg.cd_call = VM_MD_CALL_CHTIME;
 			call = ast_op(yylloc.first_line,
 				      VM_CMD_CALL, arg, AST_NUMBER,
-				      2, $2, $3);
+				      2, $3, $2);
 		}
 		if ((ret < 2) || (call == NULL))
 			YYABORT;
@@ -738,7 +739,7 @@ truncate_cmd:
 			arg.cd_call = VM_MD_CALL_TRUNCATE;
 			call = ast_op(yylloc.first_line,
 				      VM_CMD_CALL, arg, AST_NUMBER,
-				      2, $2, $3);
+				      2, $3, $2);
 		}
 		if ((ret < 2) || (call == NULL))
 			YYABORT;
@@ -765,7 +766,7 @@ mksln_cmd:
 			arg.cd_call = VM_MD_CALL_SOFTLINK;
 			call = ast_op(yylloc.first_line,
 				      VM_CMD_CALL, arg, AST_NUMBER,
-				      2, $2, $3);
+				      2, $3, $2);
 		}
 		if ((ret < 2) || (call == NULL))
 			YYABORT;
@@ -792,7 +793,7 @@ mkhln_cmd:
 			arg.cd_call = VM_MD_CALL_HARDLINK;
 			call = ast_op(yylloc.first_line,
 				      VM_CMD_CALL, arg, AST_NUMBER,
-				      2, $2, $3);
+				      2, $3, $2);
 		}
 		if ((ret < 2) || (call == NULL))
 			YYABORT;
@@ -839,7 +840,7 @@ rename_cmd:
 			arg.cd_call = VM_MD_CALL_RENAME;
 			call = ast_op(yylloc.first_line,
 				      VM_CMD_CALL, arg, AST_NUMBER,
-				      2, $2, $3);
+				      2, $3, $2);
 		}
 		if ((ret < 2) || (call == NULL))
 			YYABORT;

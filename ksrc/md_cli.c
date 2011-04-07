@@ -69,6 +69,8 @@ static int md_call_cd(struct simul_env *env, struct fifo *f, uint32_t *ip)
 	if (stack_pop(f, (long *)&dirname) < 0)
 		return -ENODATA;
 
+	DPRINT("md_cd %s\n", dirname);
+
 	ret = MD_CALL(env, VM_MD_CALL_CD, cd, dirname);
 	return stack_push(f, ret);
 }
@@ -88,8 +90,8 @@ static int md_call_mkdir(struct simul_env *env, struct fifo *f, uint32_t *ip)
 	if (stack_pop(f, (long *)&dirname) < 0)
 		return -ENODATA;
 
+	DPRINT("md_mkdir %s %lx\n", dirname, mode);
 	ret = MD_CALL(env, VM_MD_CALL_MKDIR, mkdir, dirname, mode);
-
 	return stack_push(f, ret);
 }
 
@@ -105,8 +107,8 @@ static int md_call_readdir(struct simul_env *env, struct fifo *f, uint32_t *ip)
 	if (stack_pop(f, (long *)&dirname) < 0)
 		return -ENODATA;
 
+	DPRINT("md_readdir %s\n", dirname);
 	ret = MD_CALL(env, VM_MD_CALL_READIR, readdir, dirname);
-
 	return stack_push(f, ret);
 }
 
@@ -121,8 +123,8 @@ static int md_call_unlink(struct simul_env *env, struct fifo *f, uint32_t *ip)
 	if (stack_pop(f, (long *)&name) < 0)
 		return -ENODATA;
 
+	DPRINT("md_unlink %s\n", name);
 	ret = MD_CALL(env, VM_MD_CALL_UNLINK, unlink, name);
-
 	return stack_push(f, ret);
 }
 
@@ -146,6 +148,7 @@ static int md_call_open(struct simul_env *env, struct fifo *f, uint32_t *ip)
 	if (stack_pop(f, &reg) < 0)
 		return -ENODATA;
 
+	DPRINT("md_open %s:%lx:%lx:%ld\n", name, flags, mode, reg);
 	ret = MD_CALL(env, VM_MD_CALL_OPEN, open, name, flags, mode, reg);
 	return stack_push(f, ret);
 }
@@ -160,7 +163,8 @@ static int md_call_close(struct simul_env *env, struct fifo *f, uint32_t *ip)
 
 	if (stack_pop(f, &reg) < 0)
 		return -ENODATA;
-		
+
+	DPRINT("md_close %ld\n", reg);
 	ret = MD_CALL(env, VM_MD_CALL_CLOSE, close, reg);
 	return stack_push(f, ret);
 }
@@ -176,6 +180,7 @@ static int md_call_stat(struct simul_env *env, struct fifo *f, uint32_t *ip)
 	if (stack_pop(f, (long *)&name) < 0)
 		return -ENODATA;
 
+	DPRINT("md_stat %s\n", name);
 	ret = MD_CALL(env, VM_MD_CALL_STAT, stat, name);
 	return stack_push(f, ret);
 }
@@ -189,11 +194,12 @@ static int md_call_chmod(struct simul_env *env, struct fifo *f, uint32_t *ip)
 	char *name;
 	long mode;
 
-	if (stack_pop(f, &mode) < 0)
-		return -ENODATA;
 	if (stack_pop(f, (long *)&name) < 0)
 		return -ENODATA;
+	if (stack_pop(f, &mode) < 0)
+		return -ENODATA;
 
+	DPRINT("md_chmod %s:%lx\n", name, mode);
 	ret = MD_CALL(env, VM_MD_CALL_CHMOD, chmod, name, mode);
 	return stack_push(f, ret);
 }
@@ -208,13 +214,14 @@ static int md_call_chown(struct simul_env *env, struct fifo *f, uint32_t *ip)
 	long uid;
 	long gid;
 
-	if (stack_pop(f, &gid) < 0)
+	if (stack_pop(f, (long *)&name) < 0)
 		return -ENODATA;
 	if (stack_pop(f, &uid) < 0)
 		return -ENODATA;
-	if (stack_pop(f, (long *)&name) < 0)
+	if (stack_pop(f, &gid) < 0)
 		return -ENODATA;
 
+	DPRINT("md_chown %s:%lu:%lu\n", name, uid, gid);
 	ret = MD_CALL(env, VM_MD_CALL_CHOWN, chown, name, uid, gid);
 	return stack_push(f, ret);
 }
@@ -228,11 +235,12 @@ static int md_call_chtime(struct simul_env *env, struct fifo *f, uint32_t *ip)
 	char *name;
 	long time;
 
-	if (stack_pop(f, &time) < 0)
-		return -ENODATA;
 	if (stack_pop(f, (long *)&name) < 0)
 		return -ENODATA;
+	if (stack_pop(f, &time) < 0)
+		return -ENODATA;
 
+	DPRINT("md_chtime %s:%ld\n", name, time);
 	ret = MD_CALL(env, VM_MD_CALL_CHTIME, chtime, name, time);
 	return stack_push(f, ret);
 }
@@ -246,11 +254,12 @@ static int md_call_truncate(struct simul_env *env, struct fifo *f, uint32_t *ip)
 	char *name;
 	long size;
 
-	if (stack_pop(f, &size) < 0)
-		return -ENODATA;
 	if (stack_pop(f, (long *)&name) < 0)
 		return -ENODATA;
+	if (stack_pop(f, &size) < 0)
+		return -ENODATA;
 
+	DPRINT("md_truncate %s:%ld\n", name, size);
 	ret = MD_CALL(env, VM_MD_CALL_TRUNCATE, truncate, name, size);
 	return stack_push(f, ret);
 }
@@ -264,11 +273,12 @@ static int md_call_softlink(struct simul_env *env, struct fifo *f, uint32_t *ip)
 	char *name;
 	char *new;
 
-	if (stack_pop(f, (long *)&new) < 0)
-		return -ENODATA;
 	if (stack_pop(f, (long *)&name) < 0)
 		return -ENODATA;
+	if (stack_pop(f, (long *)&new) < 0)
+		return -ENODATA;
 
+	DPRINT("md_softlink %s <> %s\n", name, new);
 	ret = MD_CALL(env, VM_MD_CALL_SOFTLINK, softlink, name, new);
 	return stack_push(f, ret);
 }
@@ -282,11 +292,12 @@ static int md_call_hardlink(struct simul_env *env, struct fifo *f, uint32_t *ip)
 	char *name;
 	char *new;
 
-	if (stack_pop(f, (long *)&new) < 0)
-		return -ENODATA;
 	if (stack_pop(f, (long *)&name) < 0)
 		return -ENODATA;
+	if (stack_pop(f, (long *)&new) < 0)
+		return -ENODATA;
 
+	DPRINT("md_hardlink %s <> %s\n", name, new);
 	ret = MD_CALL(env, VM_MD_CALL_HARDLINK, hardlink, name, new);
 	return stack_push(f, ret);
 }
@@ -302,6 +313,7 @@ static int md_call_readlink(struct simul_env *env, struct fifo *f, uint32_t *ip)
 	if (stack_pop(f, (long *)&name) < 0)
 		return -ENODATA;
 
+	DPRINT("md_readlink %s\n", name);
 	ret = MD_CALL(env, VM_MD_CALL_READLINK, readlink, name);
 	return stack_push(f, ret);
 }
@@ -320,6 +332,7 @@ static int md_call_rename(struct simul_env *env, struct fifo *f, uint32_t *ip)
 	if (stack_pop(f, (long *)&new) < 0)
 		return -ENODATA;
 
+	DPRINT("md_rename %s -> %s\n", name, new);
 	ret = MD_CALL(env, VM_MD_CALL_RENAME, rename, name, new);
 	return stack_push(f, ret);
 }

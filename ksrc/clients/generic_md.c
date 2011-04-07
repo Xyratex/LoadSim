@@ -219,7 +219,7 @@ static int generic_cli_readdir(struct md_private *cli, const char *name)
 	dir = filp_open(name, O_DIRECTORY, 0000);
 	if (IS_ERR(dir))
 		return PTR_ERR(dir);
-	DPRINT("open finished\n");
+	DPRINT("readdir open finished\n");
 
 	retval = vfs_readdir(dir, null_cb, NULL);
 
@@ -429,31 +429,33 @@ static int generic_cli_hardlink(struct md_private *cli, const char *name,
 			  const char *linkname)
 {
 	int retval;
-	struct nameidata nd;
-	struct dentry *old;
+	struct nameidata ndold;
+	struct nameidata ndnew;
 	struct dentry *new;
 
-	retval = path_lookup(name, LOOKUP_DIRECTORY | LOOKUP_PARENT, &nd);
-	if (retval)
+	retval = path_lookup(name, 0, &ndold);
+	if (retval) {
 		return retval;
+	}
 
-	old = lookup_one_len(nd.last.name, sim_nd_dentry(nd), strlen(nd.last.name));
-	if (IS_ERR(old)) {
-		retval = PTR_ERR(old);
+	retval = path_lookup(linkname, LOOKUP_DIRECTORY | LOOKUP_PARENT, &ndnew);
+	if (retval) {
 		goto exit1;
 	}
 
-	new = lookup_create(&nd, 0);
-	retval = PTR_ERR(new);
+	new = lookup_create(&ndnew, 0);
 	if (!IS_ERR(new)) {
-		retval = vfs_link(old, sim_nd_dentry(nd)->d_inode, new);
+		retval = vfs_link(sim_nd_dentry(ndold), 
+				  sim_nd_dentry(ndnew)->d_inode, new);
+		mutex_unlock(&sim_nd_dentry(ndnew)->d_inode->i_mutex); // lookup_create
 		dput(new);
+	} else {
+		retval = PTR_ERR(new);
 	}
-	mutex_unlock(&sim_nd_dentry(nd)->d_inode->i_mutex); // lookup_create
-	dput(old);
+	sim_path_put(&ndnew);
 exit1:
+	sim_path_put(&ndold);
 	DPRINT("hardlink return %d\n", retval);
-	sim_path_put(&nd);
 	return retval;
 }
 
