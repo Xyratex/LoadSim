@@ -914,7 +914,7 @@ math:
 		ret += ast_check_type($3, AST_NUMBER);
 		if (ret == 2) {
 			arg.cd_long = 0;
-			call = ast_op(yylloc.first_line, VM_CMD_ADD, arg, AST_NUMBER, 2, $1, $3);
+			call = ast_op(yylloc.first_line, VM_CMD_ADD, arg, AST_NUMBER, 2, $3, $1);
 		}
 		if (call == NULL)
 			YYABORT;
@@ -930,7 +930,7 @@ math:
 		ret += ast_check_type($3, AST_NUMBER);
 		if (ret == 2) {
 			arg.cd_long = 0;
-			call = ast_op(yylloc.first_line, VM_CMD_SUB, arg, AST_NUMBER, 2, $1, $3);
+			call = ast_op(yylloc.first_line, VM_CMD_SUB, arg, AST_NUMBER, 2, $3, $1);
 		}
 		if (call == NULL)
 			YYABORT;
@@ -941,37 +941,37 @@ math:
 logical:
 	expression TOK_L_EQ expression 
 	{ 
-		$$ = ast_op_eq(yylloc.first_line, $1, $3);
+		$$ = ast_op_eq(yylloc.first_line, $3, $1);
 		if ($$ == NULL)
 			YYABORT;
 	} 
 	| expression TOK_L_NE expression 
 	{ 
-		$$ = ast_op_ne(yylloc.first_line, $1, $3);
+		$$ = ast_op_ne(yylloc.first_line, $3, $1);
 		if ($$ == NULL)
 			YYABORT;
 	} 
 	| expression TOK_L_GR expression 
 	{ 
-		$$ = ast_op_gr(yylloc.first_line, $1, $3);
+		$$ = ast_op_gr(yylloc.first_line, $3, $1);
 		if ($$ == NULL)
 			YYABORT;
 	}
 	| expression TOK_L_LOW expression
 	{ 
-		$$ = ast_op_low(yylloc.first_line, $1, $3);
+		$$ = ast_op_low(yylloc.first_line, $3, $1);
 		if ($$ == NULL)
 			YYABORT;
 	}
 	| expression TOK_L_GE expression
 	{ 
-		$$ = ast_op_ge(yylloc.first_line, $1, $3);
+		$$ = ast_op_ge(yylloc.first_line, $3, $1);
 		if ($$ == NULL)
 			YYABORT;
 	}
 	| expression TOK_L_LE expression
 	{ 
-		$$ = ast_op_le(yylloc.first_line, $1, $3);
+		$$ = ast_op_le(yylloc.first_line, $3, $1);
 		if ($$ == NULL)
 			YYABORT;
 	}
