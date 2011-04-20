@@ -21,7 +21,7 @@ int simul_api_open()
 	return 0;
 }
 
-int simul_api_cli_create(char *cliname, long cliid, struct server_link *sl,
+int simul_api_cli_create(char *cliname, long cliid, struct simul_mnt *sl,
 			 void *data, int size, int regs)
 {
 	struct simul_ioctl_cli _data;
@@ -31,8 +31,7 @@ int simul_api_cli_create(char *cliname, long cliid, struct server_link *sl,
 
 	_data.sic_name = cliname;
 	_data.sic_id = cliid;
-	_data.sic_dst_fs = sl->sl_fs;
-	_data.sic_dst_nid = sl->sl_nid;
+	_data.sic_mnt = *sl;
 	_data.sic_program = data;
 	_data.sic_programsz = size;
 	_data.sic_regs = regs;

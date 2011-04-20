@@ -3,6 +3,7 @@
 #include <linux/errno.h>
 
 #include "env.h"
+#include "kapi.h"
 #include "kdebug.h"
 #include "vm_defs.h"
 #include "vm_api.h"
@@ -24,10 +25,18 @@
 			rc;					\
 		})
 
-int md_cli_init(struct simul_env *env, const char *fsname, const char *fsnid)
+struct md_client *mdtp [SM_MNT_MAX] = { 
+    [SM_MNT_LOCAL] = &md_local_cli,
+    [SM_MNT_LUSTRE] = &md_lustre_cli,
+};
+
+int md_cli_init(struct simul_env *env, const struct simul_mnt *mnt)
 {
 	int i;
-	
+
+	if (mnt->sm_type <= SM_MNT_NONE || mnt->sm_type >= SM_MNT_MAX)
+		return -EINVAL;
+
 	env->se_stat_tn = VM_MD_CALL_MAX - VM_MD_CALL_CD;
 	env->se_stat_t = kmalloc(sizeof(*env->se_stat_t) * env->se_stat_tn,
 				 GFP_KERNEL);
@@ -37,9 +46,8 @@ int md_cli_init(struct simul_env *env, const char *fsname, const char *fsnid)
 	for(i=0;i<env->se_stat_tn; i++)
 		stat_time_init(&env->se_stat_t[i]);
 
-	env->u.se_md = &generic_cli;
-	return env->u.se_md->cli_init(&env->se_data, fsname, fsnid);
-
+	env->u.se_md = mdtp[mnt->sm_type];
+	return env->u.se_md->cli_init(&env->se_data, &mnt->sm_u);
 }
 
 void md_cli_fini(struct simul_env *env)

@@ -1,14 +1,13 @@
 #ifndef _SIMUL_CLIENTS_H_
 #define _SIMUL_CLIENTS_H_
 
-enum {
-	MAX_OPEN_HANDLES = 1000
-};
-
 struct md_private;
 
 struct md_client {
-	int (*cli_init)(struct md_private **env, const char *fsname, const char *dstnid);
+	/**
+	 create a new client instance
+	 */
+	int (*cli_init)(struct md_private **env, const void __user *data);
 	int (*cli_prerun)(struct md_private *env);
 	int (*cli_fini)(struct md_private *env);
 
@@ -54,6 +53,8 @@ struct md_client {
 	int (*rename)(struct md_private *,const char *oldname, const char *newname);
 };
 
-extern struct md_client generic_cli;
+extern struct md_client md_local_cli;
+extern struct md_client md_lustre_cli;
+
 
 #endif

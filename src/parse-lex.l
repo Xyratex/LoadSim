@@ -70,6 +70,8 @@ PROCEDURE	[p|P][r|R][o|O][c|C][e|E][d|D][u|U][r|R][e|E]
 ENDPROC		[e|E][n|N][d|D][p|P][r|R][o|O][c|C]
 CLIENT		[c|C][l|L][i|I][e|E][n|N][t|T]
 SERVER		[s|S][e|E][r|R][v|V][e|E][r|R]
+LUSTRE_FS	[l|L][u|U][s|S][t|T][r|R][e|E]
+LOCAL_FS	[l|L][o|O][c|C][a|A][l|L]
 
 LOOP_BEGIN	[l|L][o|O][o|O][p|P]
 LOOP_END	[e|E][n|N][d|D][l|L][o|O][o|O][p|P]
@@ -169,6 +171,8 @@ REG		[$][R]{digit}
 
 {CLIENT}	return TOK_CLIENT;
 {SERVER}	return TOK_SERVER;
+{LUSTRE_FS}	return TOK_FS_LUSTRE;
+{LOCAL_FS}	return TOK_FS_LOCAL;
 
 {IP}@{LNDS}	{ yylval.strval = strdup(yytext); return TOK_NID; }
 {IP}		{ yylval.strval = strdup(yytext); return TOK_IP; }

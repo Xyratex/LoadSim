@@ -38,6 +38,7 @@ void yyerror(const char *str);
 %token TOK_WHILE_BEGIN TOK_WHILE_END
 
 %token TOK_SERVER TOK_CLIENT
+%token TOK_FS_LOCAL TOK_FS_LUSTRE
 
 %type<intval> calc_o_flags
 
@@ -86,18 +87,39 @@ main_command:
  'nid' is network address to connect
  */
 server_set:
-	TOK_SERVER TOK_ID TOK_NID QSTRING
+	TOK_SERVER server_param
+	;
+
+server_param:
+	lustre_server 
+	| local_server
+	;
+
+
+lustre_server:
+	TOK_FS_LUSTRE TOK_NID QSTRING
 	{
 		int ret;
-		ret = server_create($2, $4, $3);
+		ret = server_create_lustre($2, $3);
 		free($2);
 		free($3);
-		free($4);
 
 		if (ret)
 			YYABORT;
 	}
 	;
+
+local_server:
+	TOK_FS_LOCAL QSTRING
+	{
+		int ret;
+
+		ret = server_create_local($2);
+		free($2);
+
+		if (ret)
+			YYABORT;
+	}
 
 /**
  define one client used on test.

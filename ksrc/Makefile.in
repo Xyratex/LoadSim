@@ -1,7 +1,7 @@
 ifneq ($(KERNELRELEASE),)
     	obj-m	  := sim.o
     	sim-objs  := simul.o stats.o env.o
-    	sim-objs  += md_cli.o clients/generic_md.o
+    	sim-objs  += md_cli.o clients/generic_md.o clients/local_md.o clients/lustre_md.o
     	sim-objs  += reg.o stack.o vm_main.o vm_core.o vm_call.o vm_sys.o
 else
     	KDIR      := @LINUX_OBJ@
@@ -25,3 +25,9 @@ distdir:
 	cp $(PWD)/Makefile.in $(PWD)/*.[ch] @top_builddir@/@PACKAGE@-@VERSION@/ksrc;
 	mkdir @top_builddir@/@PACKAGE@-@VERSION@/ksrc/clients;
 	cp $(PWD)/clients/*.[ch] @top_builddir@/@PACKAGE@-@VERSION@/ksrc/clients
+
+load:
+	insmod ./sim.ko
+
+unload:
+	rmmod sim

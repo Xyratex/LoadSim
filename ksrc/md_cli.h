@@ -1,7 +1,9 @@
 #ifndef __SIM_MD_CLI__
 #define __SIM_MD_CLI__
 
-int md_cli_init(struct simul_env *env, const char *fsname, const char *fsnid);
+struct simul_mnt;
+
+int md_cli_init(struct simul_env *env, const struct simul_mnt *mnt);
 
 void md_cli_fini(struct simul_env *env);
 

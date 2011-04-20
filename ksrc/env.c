@@ -51,7 +51,7 @@ int env_create(struct simul_env **env, struct simul_ioctl_cli *data)
 
 	ret->se_id = data->sic_id;
 
-	rc = md_cli_init(ret, data->sic_dst_fs, data->sic_dst_nid);
+	rc = md_cli_init(ret, &data->sic_mnt);
 	if (rc < 0)
 		goto err;
 		

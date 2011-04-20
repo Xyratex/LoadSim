@@ -11,30 +11,35 @@
 #include "kdebug.h"
 #include "compat.h"
 #include "clients/client.h"
+#include "clients/md_cli_priv.h"
 
-struct md_private {
-	struct vfsmount		*lp_mnt;
-	struct file		**lp_open;
-};
-
-static const char lustre_fs[] = "lustre";
-
-static struct vfsmount *mount_lustre(char *dev, char *opt)
+int generic_cli_create(struct md_private **lp)
 {
-	struct file_system_type *type;
-	struct vfsmount *mnt;
-	int flags = 0;
+	struct md_private *ret;
+	int rc;
 
-	type = get_fs_type(lustre_fs);
-	if (!type)
-		return ERR_PTR(-ENODEV);
-	mnt = vfs_kern_mount(type, flags, dev, opt);
-	module_put(type->owner);
+	ret = kmalloc(sizeof *ret, GFP_KERNEL);
+	if (ret == NULL) {
+		rc = -ENOMEM;
+		goto error;
+	}
+	memset(ret, 0, sizeof *ret);
+	
+	ret->lp_open = kmalloc(sizeof(struct file *) * MAX_OPEN_HANDLES, GFP_KERNEL);
+	if (ret->lp_open == NULL) {
+		rc = -ENOMEM;
+		goto error;
+	}
+	*lp = ret;
+	return 0;
+error:
+	if (ret != NULL)
+		kfree(ret);
 
-	return mnt;
+	return rc;
 }
 
-static int generic_cli_destroy(struct md_private *lp)
+int generic_cli_destroy(struct md_private *lp)
 {
 	if (lp == NULL)
 		return 0;
@@ -54,65 +59,7 @@ static int generic_cli_destroy(struct md_private *lp)
 	return 0;
 }
 
-#define LUSTRE_FS "%s:/%s"
-#define LUSTRE_OPT "device=%s"
-
-static int generic_cli_create(struct md_private **cli, const char *fsname, const char *dstnid)
-{
-	struct md_private *ret = NULL;
-	char *fs = NULL;
-	char *opt = NULL;
-	int rc;
-
-	rc = snprintf(NULL, 0, LUSTRE_FS, dstnid, fsname) + 1;
-	fs = kmalloc(rc, GFP_KERNEL);
-	if (fs == NULL)
-		return -ENOMEM;
-
-	opt = kmalloc(rc + sizeof(LUSTRE_OPT), GFP_KERNEL);
-	if (opt == NULL) {
-		rc = -ENOMEM;
-		goto error;
-	}
-
-	ret = kmalloc(sizeof *ret, GFP_KERNEL);
-	if (ret == NULL) {
-		rc = -ENOMEM;
-		goto error;
-	}
-	memset(ret, 0, sizeof *ret);
-	
-	ret->lp_open = kmalloc(sizeof(struct file *) * MAX_OPEN_HANDLES, GFP_KERNEL);
-	if (ret->lp_open == NULL) {
-		rc = -ENOMEM;
-		goto error;
-	}
-
-	snprintf(fs, rc, LUSTRE_FS, dstnid, fsname);
-	snprintf(opt, rc + sizeof(LUSTRE_OPT), LUSTRE_OPT, fs);
-	DPRINT("dev %s / opt %s\n", fs, opt);
-
-	ret->lp_mnt = mount_lustre(fs, opt);
-	if (IS_ERR(ret->lp_mnt)) {
-		rc = PTR_ERR(ret->lp_mnt);
-		ret->lp_mnt = NULL;
-		goto error;
-	}
-	/** disconnect lov + osc from work */
-	
-	*cli = ret;
-	rc = 0;
-	ret = NULL;
-error:
-	if (ret)
-		generic_cli_destroy(ret);
-	if (opt)
-		kfree(opt);
-	kfree(fs);
-	return rc;
-}
-
-static int generic_cli_prerun(struct md_private *cli)
+int generic_cli_prerun(struct md_private *cli)
 {
 	struct fs_struct old_fs;
 
@@ -152,7 +99,7 @@ static int generic_cli_prerun(struct md_private *cli)
 	return 0;
 }
 
-static int generic_cli_cd(struct md_private *cli, const char *pwd)
+int generic_cli_cd(struct md_private *cli, const char *pwd)
 {
 	int retval;
 	struct dentry *old_pwd;
@@ -181,7 +128,7 @@ out:
 	return retval;
 }
 
-static int generic_cli_mkdir(struct md_private *cli, const char *pwd, const int mode)
+int generic_cli_mkdir(struct md_private *cli, const char *pwd, const int mode)
 {
 	int retval;
 	struct nameidata nd;
@@ -211,7 +158,7 @@ static int null_cb(void * __buf, const char * name, int namlen, loff_t offset,
 	return 0;
 }
 
-static int generic_cli_readdir(struct md_private *cli, const char *name)
+int generic_cli_readdir(struct md_private *cli, const char *name)
 {
 	struct file *dir;
 	int retval;
@@ -228,7 +175,7 @@ static int generic_cli_readdir(struct md_private *cli, const char *name)
 	return 0;
 }
 
-static int generic_cli_unlink(struct md_private *cli, const char *name)
+int generic_cli_unlink(struct md_private *cli, const char *name)
 {
 	int retval;
 	struct nameidata nd;
@@ -261,8 +208,8 @@ static int generic_cli_unlink(struct md_private *cli, const char *name)
 	return retval;
 }
 
-static int generic_cli_open(struct md_private *lp, const char *name, 
-			const long flags, const long mode, const long reg)
+int generic_cli_open(struct md_private *lp, const char *name, 
+		     const long flags, const long mode, const long reg)
 {
 	int rc = 0;
 
@@ -275,7 +222,7 @@ static int generic_cli_open(struct md_private *lp, const char *name,
 	return rc;
 }
 
-static int generic_cli_close(struct md_private *lp, const long reg)
+int generic_cli_close(struct md_private *lp, const long reg)
 {
 	int rc;
 
@@ -286,7 +233,7 @@ static int generic_cli_close(struct md_private *lp, const long reg)
 	return rc;
 }
 
-static int generic_cli_stat(struct md_private *cli, const char *name)
+int generic_cli_stat(struct md_private *cli, const char *name)
 {
 	int retval;
 	struct nameidata nd;
@@ -302,7 +249,7 @@ out:
 	return retval;
 }
 
-static int generic_cli_setattr(const char *name, struct iattr *newattrs)
+int generic_cli_setattr(const char *name, struct iattr *newattrs)
 {
 	int retval;
 	int suid;
@@ -332,8 +279,8 @@ exit:
 	return retval;
 }
 
-static int generic_cli_chown(struct md_private *cli, const char *name,
-			    long uid, long gid)
+int generic_cli_chown(struct md_private *cli, const char *name,
+		      long uid, long gid)
 {
 	struct iattr newattrs;
 
@@ -350,7 +297,7 @@ static int generic_cli_chown(struct md_private *cli, const char *name,
 	return generic_cli_setattr(name, &newattrs);
 }
 
-static int generic_cli_chmod(struct md_private *cli, const char *name, long mode)
+int generic_cli_chmod(struct md_private *cli, const char *name, long mode)
 {
 	struct iattr newattrs;
 
@@ -360,7 +307,7 @@ static int generic_cli_chmod(struct md_private *cli, const char *name, long mode
 	return generic_cli_setattr(name, &newattrs);
 }
 
-static int generic_cli_chtime(struct md_private *cli, const char *name, long time)
+int generic_cli_chtime(struct md_private *cli, const char *name, long time)
 {
 	struct iattr newattrs;
 
@@ -376,7 +323,7 @@ static int generic_cli_chtime(struct md_private *cli, const char *name, long tim
 	return generic_cli_setattr(name, &newattrs);
 }
 
-static int generic_cli_truncate(struct md_private *cli, const char *name, long size)
+int generic_cli_truncate(struct md_private *cli, const char *name, long size)
 {
 	struct iattr newattrs;
 
@@ -386,8 +333,7 @@ static int generic_cli_truncate(struct md_private *cli, const char *name, long s
 	return generic_cli_setattr(name, &newattrs);
 }
 
-
-static int generic_cli_lookup(struct md_private *cli, const char *name)
+int generic_cli_lookup(struct md_private *cli, const char *name)
 {
 	int retval;
 	struct nameidata nd;
@@ -400,8 +346,8 @@ static int generic_cli_lookup(struct md_private *cli, const char *name)
 	return 0;
 }
 
-static int generic_cli_softlink(struct md_private *cli, const char *name,
-			  const char *linkname)
+int generic_cli_softlink(struct md_private *cli, const char *name,
+			 const char *linkname)
 {
 	int retval;
 	struct nameidata nd;
@@ -425,8 +371,8 @@ static int generic_cli_softlink(struct md_private *cli, const char *name,
 	return retval;
 }
 
-static int generic_cli_hardlink(struct md_private *cli, const char *name,
-			  const char *linkname)
+int generic_cli_hardlink(struct md_private *cli, const char *name,
+			 const char *linkname)
 {
 	int retval;
 	struct nameidata ndold;
@@ -459,7 +405,7 @@ exit1:
 	return retval;
 }
 
-static int generic_cli_readlink(struct md_private *cli, const char *linkname)
+int generic_cli_readlink(struct md_private *cli, const char *linkname)
 {
 	int retval;
 	struct nameidata nd;
@@ -473,8 +419,8 @@ static int generic_cli_readlink(struct md_private *cli, const char *linkname)
 	return retval;
 }
 
-static int generic_cli_rename(struct md_private *cli, const char *oldname,
-			  const char *newname)
+int generic_cli_rename(struct md_private *cli, const char *oldname,
+		       const char *newname)
 {
 	int retval;
 	struct nameidata ndold;
@@ -521,26 +467,3 @@ exit1:
 	sim_path_put(&ndold);
 	return retval;
 }
-
-struct md_client generic_cli = {
-	.cli_init 	= generic_cli_create,
-	.cli_prerun	= generic_cli_prerun,
-	.cli_fini	= generic_cli_destroy,
-
-	.cd		= generic_cli_cd,
-	.mkdir		= generic_cli_mkdir,
-	.readdir	= generic_cli_readdir,
-	.unlink		= generic_cli_unlink,
-	.open		= generic_cli_open,
-	.close		= generic_cli_close,
-	.stat		= generic_cli_stat,
-	.chmod		= generic_cli_chmod,
-	.chown		= generic_cli_chown,
-	.chtime		= generic_cli_chtime,
-	.truncate	= generic_cli_truncate,
-	.lookup		= generic_cli_lookup,
-	.softlink	= generic_cli_softlink,
-	.hardlink	= generic_cli_hardlink,
-	.readlink	= generic_cli_readlink,
-	.rename		= generic_cli_rename,
-};

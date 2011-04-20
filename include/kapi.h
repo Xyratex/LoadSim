@@ -26,17 +26,40 @@
 #define __user 
 #endif
 
+struct local_mnt_opt {
+	char __user	*mnt;
+};
+
+struct lustre_mnt_opt {
+	char __user *fsname;
+	char __user *dstnid;
+};
+
+enum simul_mnt_type {
+	SM_MNT_NONE = -1,
+	SM_MNT_LUSTRE,
+	SM_MNT_LOCAL,
+	SM_MNT_MAX
+};
+
+struct simul_mnt {
+	enum simul_mnt_type		sm_type;
+	union {
+	    struct local_mnt_opt	local;
+	    struct lustre_mnt_opt	lustre;
+	} sm_u;
+};
+
 /**
  parameters to a create lustre metadata client
  */
 struct simul_ioctl_cli {
-	char __user	*sic_name;
-	long		 sic_id;
-	char __user	*sic_dst_fs;
-	char __user	*sic_dst_nid;
-	int		sic_programsz;
-	char __user	*sic_program;
-	int		sic_regs;
+	char __user		*sic_name;
+	long		 	 sic_id;
+	struct simul_mnt __user	 sic_mnt;
+	int			 sic_programsz;
+	char __user		*sic_program;
+	int			 sic_regs;	/** < number of registers */
 };
 
 /**

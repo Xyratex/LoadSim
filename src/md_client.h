@@ -6,28 +6,13 @@
 #include "kapi.h"
 
 /**
- connection to meta-data server
-*/
-struct server_link {
-	/**
-	 server name to connect
-	*/
-	char			*sl_name;
-	/**
-	 NID to connect
-	 */
-	char			*sl_nid;
-	/**
-	 FS to connect
-	 */
-	char			*sl_fs;
-};
-/**
  initialize server connection
  */
-int server_create(char *, char *, char *);
+int server_create_local(char *path);
 
-void server_destroy(const char *name);
+int server_create_lustre(char *nid, char *fsname);
+
+void server_destroy(void);
 
 
 const char *md_stat_name(int md_op);
@@ -52,7 +37,7 @@ struct md_client {
 	/**
 	 connection info
 	 */
-	struct server_link	*mdc_mds;
+	struct simul_mnt	*mdc_mds;
 	/**
 	 program run on that client
 	 */

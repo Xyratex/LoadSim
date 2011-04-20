@@ -1,7 +1,7 @@
 #ifndef __SIMUL_API_
 #define __SIMUL_API_
 
-struct server_link;
+struct simul_mnt;
 struct simul_res;
 
 /**
@@ -21,7 +21,7 @@ int simul_api_open(void);
  create one test client and upload on it.
 
  */
-int simul_api_cli_create(char *cliname, long cliid, struct server_link *sl,
+int simul_api_cli_create(char *cliname, long cliid, struct simul_mnt *sl,
 			 void *data, int size, int regs);
 
 /**

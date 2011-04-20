@@ -12,6 +12,8 @@
 #include "vm_compile.h"
 #include "kapi.h" /* XXXX */
 
+
+#if 0
 static struct server_link sl;
 
 int server_create(char *name, char *fs, char *nid)
@@ -22,6 +24,50 @@ int server_create(char *name, char *fs, char *nid)
 
 	return 0;
 }
+#endif
+
+struct simul_mnt sl = { .sm_type = SM_MNT_NONE };
+
+int server_create_local(char *path)
+{
+	sl.sm_type = SM_MNT_LOCAL;
+	sl.sm_u.local.mnt = strdup(path);
+	if (sl.sm_u.local.mnt == NULL)
+		return -ENOMEM;
+
+	return 0;
+}
+
+
+int server_create_lustre(char *nid, char *fs)
+{
+	sl.sm_type = SM_MNT_LUSTRE;
+	sl.sm_u.lustre.fsname = strdup(fs);
+	sl.sm_u.lustre.dstnid = strdup(nid);
+
+	if(sl.sm_u.lustre.fsname != NULL &&
+	   sl.sm_u.lustre.dstnid != NULL)
+		return 0;
+
+	/* error */
+	server_destroy();
+	return -ENOMEM;
+}
+
+void server_destroy()
+{
+	if (sl.sm_type == SM_MNT_LOCAL) {
+		if (sl.sm_u.local.mnt)
+			free(sl.sm_u.local.mnt);
+	} else if (sl.sm_type == SM_MNT_LUSTRE) {
+		if (sl.sm_u.lustre.fsname)
+			free(sl.sm_u.lustre.fsname);
+
+		if (sl.sm_u.lustre.dstnid)
+			free(sl.sm_u.lustre.dstnid);
+	}
+}
+
 
 LIST_HEAD(clients);
 static long cliidx = 0;
@@ -50,7 +96,7 @@ int client_create(char *name, char *program)
 	if (prg == NULL)
 		return -ESRCH;
 
-	if (sl.sl_name == NULL)
+	if (sl.sm_type == SM_MNT_NONE)
 		return -ENODATA;
 
 	cli = malloc(sizeof *cli);
@@ -63,8 +109,10 @@ int client_create(char *name, char *program)
 		client_destroy(cli);
 		return -ENOMEM;
 	}
-	cli->mdc_stats = malloc((VM_MD_CALL_MAX - VM_MD_CALL_MAX) * 
-				sizeof(*cli->mdc_stats));
+
+	cli->mdc_stats_num = VM_MD_CALL_MAX - VM_MD_CALL_CD;
+	cli->mdc_stats = malloc(cli->mdc_stats_num * 
+			        sizeof(*cli->mdc_stats));
 	if (cli->mdc_stats == NULL) {
 		client_destroy(cli);
 		return -ENOMEM;
@@ -181,15 +229,11 @@ int clients_get_stats(void)
 	int rc = 0;
 
 	list_for_each_entry(cli, &clients, mdc_link) {
-		cli->mdc_stats_num = VM_MD_CALL_MAX - VM_MD_CALL_CD;
-		cli->mdc_stats = malloc(sizeof(*cli->mdc_stats) *
-					cli->mdc_stats_num);
-		if (cli->mdc_stats == NULL) {
-			rc = -ENOMEM;
-			continue;
-		}
-		simul_api_get_results(cli->mdc_id, &cli->mdc_rc, &cli->mdc_op,
-				      &cli->mdc_time, cli->mdc_stats);
+		rc = simul_api_get_results(cli->mdc_id, &cli->mdc_rc, 
+					   &cli->mdc_op,
+				           &cli->mdc_time, cli->mdc_stats);
+		if (rc < 0)
+			err_print("Can't get stats for client %s \n", cli->mdc_name);
 	}
 	return rc;
 }
