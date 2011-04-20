@@ -1,0 +1,3 @@
+Wed Apr 20 15:06:03 MSD 2011
+Changed format of program to ability to use different md backends for testing.
+Change affected to "server" config line.
