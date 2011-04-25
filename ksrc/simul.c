@@ -89,6 +89,12 @@ err:
 	return rc;
 }
 
+void clients_destroy(void)
+{
+	env_destroy_all();
+	atomic_set(&clients_cnt, 0);
+}
+
 int user_results_get(struct simul_ioctl_user_res __user *data)
 {
 	struct simul_ioctl_user_res _data;
@@ -136,7 +142,7 @@ static int simul_ioctl(struct inode *inode, struct file *file,
 		rc = system_results_get((struct simul_ioctl_system_res *)arg);
 		break;
 	case SIM_IOW_DESTROY_CLI:
-		env_destroy_all();
+		clients_destroy();
 		rc = 0;
 		break;
 	default:
@@ -153,8 +159,8 @@ int simul_open(struct inode *inode, struct file *file)
 
 int simul_release(struct inode *inode, struct file *file)
 {
-	env_destroy_all();
 
+	clients_destroy();
 	module_put(THIS_MODULE);
 	return 0;
 }
