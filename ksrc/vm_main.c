@@ -120,7 +120,7 @@ int vm_interpret_run(struct stack_vm *vm)
 	struct timespec start = CURRENT_TIME;
 
 	vm->sv_run = 1;
-	while(vm->sv_ip < vm->sv_size) {
+	while (vm->sv_ip < vm->sv_size) {
 		old_ip = vm->sv_ip;
 		op = vm->sv_program[vm->sv_ip ++];
 		DPRINT("trace %lx op %d - stack %d\n", old_ip, op, stack_size(vm->sv_stack));

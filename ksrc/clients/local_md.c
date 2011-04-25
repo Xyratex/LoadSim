@@ -30,8 +30,8 @@ struct vfsmount *mount_local(char *path)
 	retval = path_lookup(path, LOOKUP_FOLLOW, &nd);
 	if (retval)
 		return ERR_PTR(retval);
-	if (nd.dentry == nd.mnt->mnt_root)
-		mnt = mntget(nd.mnt);
+	if (sim_nd_dentry(nd) == sim_nd_mnt(nd)->mnt_root)
+		mnt = mntget(sim_nd_mnt(nd));
 	sim_path_put(&nd);
 
 	return mnt;
