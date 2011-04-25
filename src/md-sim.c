@@ -11,6 +11,9 @@
 
 #include "xml/ezxml.h"
 
+uint32_t ncli;
+uint64_t total_time;
+
 #if 0
 void client_res(struct md_client *cli)
 {
@@ -94,7 +97,8 @@ void client_stats(char *name)
 	FILE *out;
 
 	root = ezxml_new("mdsimstats");
-	xml_add_num(root, "numclients", 0);
+	xml_add_num(root, "numclients", ncli);
+	xml_add_num(root, "total_time", total_time);
 
 	list_for_each_entry(cli, &clients, mdc_link) {
 		xml = ezxml_add_child(root, "client", 1);
@@ -179,11 +183,17 @@ int main(int argc, char *argv[])
 	}
 
 	simul_api_run();
-
 	simul_api_wait_finished();
 
 	clients_get_stats();
+	rc = simul_api_system_get_results(&ncli, &total_time);
+	if (rc < 0) {
+		err_print("can't get system stats\n");
+		ncli = 0;
+		total_time = 0;
+	}
 
+	clients_destroy();
 	simul_api_close();
 
 	client_stats(log);

@@ -72,12 +72,18 @@ struct simul_stat_op {
 	int64_t sso_avg_time;
 };
 
-struct simul_ioctl_res {
+struct simul_ioctl_user_res {
 	uint32_t		ss_cli;
 	uint32_t		*ss_res;
 	uint32_t		*ss_ip;
 	uint64_t		*ss_time; /** < time to execute program in ms */
 	struct simul_stat_op __user *ss_stats; /** < fill by kernel */
+};
+
+
+struct simul_ioctl_system_res {
+	uint32_t	ssr_ncli;
+	uint64_t	ssr_time;
 };
 
 /**
@@ -97,7 +103,15 @@ enum simul_ops {
 	 get results after all tests a finished.
 	 @see struct simul_res
 	 */
-	SIM_IOW_RESULTS		= _IOWR('S', 3, struct simul_ioctl_res)
+	SIM_IOW_USER_RESULTS	= _IOWR('S', 3, struct simul_ioctl_user_res),
+        /**
+         get system stats about test execution
+         */
+        SIM_IOW_SYSTEM_RESULTS	= _IOWR('S', 4, struct simul_ioctl_system_res),
+        /**
+         destroy clients
+         */
+        SIM_IOW_DESTROY_CLI	= _IO('S',5),
 };
 
 #ifndef __user

@@ -3,6 +3,7 @@
 #include <stdarg.h>
 #include <string.h>
 
+#include "debug.h"
 #include "encode.h"
 
 /**
@@ -65,7 +66,7 @@ struct ast_node *ast_op(int line, enum vm_cmd cmd, union cmd_arg local, enum ast
 		va_end(ap);
 	}
 
-	printf("add op %d - %d = %p\n", cmd, type, node);
+	DPRINT("add op %d - %d = %p\n", cmd, type, node);
 	return node;
 }
 

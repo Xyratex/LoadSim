@@ -229,11 +229,16 @@ int clients_get_stats(void)
 	int rc = 0;
 
 	list_for_each_entry(cli, &clients, mdc_link) {
-		rc = simul_api_get_results(cli->mdc_id, &cli->mdc_rc, 
+		rc = simul_api_user_get_results(cli->mdc_id, &cli->mdc_rc, 
 					   &cli->mdc_op,
 				           &cli->mdc_time, cli->mdc_stats);
 		if (rc < 0)
 			err_print("Can't get stats for client %s \n", cli->mdc_name);
 	}
 	return rc;
+}
+
+void clients_destroy(void)
+{
+	simul_api_destroy_cli();
 }

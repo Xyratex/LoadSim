@@ -21,6 +21,11 @@ struct inode;
 struct completion start;
 
 static atomic_t clients_cnt = ATOMIC_INIT(0);
+struct timespec start_time;
+struct timespec finish_time;
+
+static atomic_t clients_run = ATOMIC_INIT(0);
+
 static DECLARE_WAIT_QUEUE_HEAD(clients_wait);
 
 enum sim_state {
@@ -30,7 +35,7 @@ enum sim_state {
 };
 
 static enum sim_state state = SIM_SETUP;
-static DECLARE_WAIT_QUEUE_HEAD(clients_run);
+static DECLARE_WAIT_QUEUE_HEAD(clients_run_waitq);
 
 static int client_thread(void *d)
 {
@@ -38,10 +43,11 @@ static int client_thread(void *d)
 
 	snprintf(current->comm, sizeof(current->comm), "%s", env->se_name);
 
+	atomic_inc(&clients_run);
 	atomic_inc(&clients_cnt);
 	complete(&start);
 
-	wait_event(clients_run, state != SIM_SETUP);
+	wait_event(clients_run_waitq, state != SIM_SETUP);
 	if (state == SIM_TERM)
 		return 0;
 
@@ -49,7 +55,7 @@ static int client_thread(void *d)
 	DPRINT("thread run\n");
 	env_run(env);
 
-	atomic_dec(&clients_cnt);
+	atomic_dec(&clients_run);
 	wake_up(&clients_wait);
 
 	return 0;
@@ -83,15 +89,28 @@ err:
 	return rc;
 }
 
-int results_get(struct simul_ioctl_res __user *data)
+int user_results_get(struct simul_ioctl_user_res __user *data)
 {
-	struct simul_ioctl_res _data;
+	struct simul_ioctl_user_res _data;
 
 	if (copy_from_user(&_data, data, sizeof(_data)))
 		return -EFAULT;
 
 	return env_results_get(_data.ss_cli, _data.ss_res, _data.ss_ip, 
                                _data.ss_time, _data.ss_stats);
+}
+
+int system_results_get(struct simul_ioctl_system_res __user *data)
+{
+	struct simul_ioctl_system_res _data;
+	struct timespec diff;
+
+	_data.ssr_ncli = atomic_read(&clients_cnt);
+
+	diff = timespec_sub(finish_time, start_time);
+	_data.ssr_time = timespec_to_ns(&diff) / NSEC_PER_USEC;
+
+	return copy_to_user(data, &_data, sizeof(*data));
 }
 
 static int simul_ioctl(struct inode *inode, struct file *file,
@@ -107,10 +126,18 @@ static int simul_ioctl(struct inode *inode, struct file *file,
 	case SIM_IOW_RUN:
 		rc = 0;
 		state = SIM_RUN;
-		wake_up(&clients_run);
+		start_time = CURRENT_TIME;
+		wake_up(&clients_run_waitq);
 		break;
-	case SIM_IOW_RESULTS:
-		rc = results_get((struct simul_ioctl_res *)arg);
+	case SIM_IOW_USER_RESULTS:
+		rc = user_results_get((struct simul_ioctl_user_res *)arg);
+		break;
+	case SIM_IOW_SYSTEM_RESULTS:
+		rc = system_results_get((struct simul_ioctl_system_res *)arg);
+		break;
+	case SIM_IOW_DESTROY_CLI:
+		env_destroy_all();
+		rc = 0;
 		break;
 	default:
 		rc = -ENOSYS;
@@ -137,10 +164,12 @@ static unsigned int simul_poll (struct file * file, poll_table * wait)
 	unsigned int mask = 0;
 
 	poll_wait(file, &clients_wait, wait);
-	if (atomic_read(&clients_cnt) == 0)
+	if (atomic_read(&clients_run) == 0) {
+		finish_time = CURRENT_TIME;
 		mask |= POLLIN | POLLRDNORM;
+	}
 
-	DPRINT("poll cli %d - %u\n", atomic_read(&clients_cnt), mask);
+	DPRINT("poll cli %d - %u\n", atomic_read(&clients_run), mask);
 	return mask;
 }
 

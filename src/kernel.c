@@ -72,11 +72,11 @@ int simul_api_wait_finished()
 	return rc;
 }
 
-int simul_api_get_results(uint32_t id, uint32_t *res, uint32_t *ip,
+int simul_api_user_get_results(uint32_t id, uint32_t *res, uint32_t *ip,
                           uint64_t *time,
 		          struct simul_stat_op *data)
 {
-	struct simul_ioctl_res _res;
+	struct simul_ioctl_user_res _res;
 	if (api_fd == -1)
 		return -ENOSYS;
 
@@ -86,7 +86,25 @@ int simul_api_get_results(uint32_t id, uint32_t *res, uint32_t *ip,
 	_res.ss_ip = ip;
 	_res.ss_stats = data;
 
-	return ioctl(api_fd, SIM_IOW_RESULTS, (long)&_res);
+	return ioctl(api_fd, SIM_IOW_USER_RESULTS, (long)&_res);
+}
+
+int simul_api_system_get_results(uint32_t *ncli, uint64_t *time)
+{
+	struct simul_ioctl_system_res data;
+	int rc;
+
+	rc = ioctl(api_fd, SIM_IOW_SYSTEM_RESULTS, (long)&data);
+	if (rc == 0) {
+		*ncli = data.ssr_ncli;
+		*time = data.ssr_time;
+	}
+	return rc;
+}
+
+int simul_api_destroy_cli()
+{
+	return ioctl(api_fd, SIM_IOW_DESTROY_CLI, NULL);
 }
 
 int simul_api_close()
