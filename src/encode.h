@@ -66,6 +66,10 @@ struct ast_node *ast_op_while_start(int line, struct ast_node *expr);
 */
 struct ast_node *ast_op_while_end(int line);
 
+/**
+ internal function generator
+*/
+struct ast_node *ast_op_internal(int line, char *name);
 
 /**
  generate tree for "expected" part

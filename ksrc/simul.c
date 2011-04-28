@@ -124,7 +124,7 @@ static int simul_ioctl(struct inode *inode, struct file *file,
 {
 	int rc;
 
-	DPRINT("got cmd %d\n", cmd);
+	DPRINT("got cmd %x\n", cmd);
 	switch (cmd) {
 	case SIM_IOW_MDCLIENT:
 		rc = client_create((struct simul_ioctl_cli *)arg);

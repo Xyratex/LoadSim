@@ -114,7 +114,8 @@ EXPECTED	[e|E][x|X][p|P][e|E][c|C][t|T][e|E][d|D]
 
 ID		{alpha}({alpha}|{digit})+
 
-REG		[$][R]{digit}
+REG		[$][r|R]{digit}
+FUNCS		[$][$]({alpha}|[_])+
 
 %%
 {CR}		/* ignore single EOL */
@@ -188,12 +189,15 @@ REG		[$][R]{digit}
 		    }
 		    return TOK_NUMBER;
 		}
-
+{FUNCS}		{
+		    yylval.strval = strdup(yytext + 2);
+		    return TOK_INTERNAL_FUNC;
+		}
 {REG}		{
 		    char *err;
 
 		    errno = 0;
-		    yylval.intval = strtol(yytext+2, &err, 0);
+		    yylval.intval = strtol(yytext + 2, &err, 0);
 		    if ((*err != '\0') || (errno != 0)) {
 				err_print("bad regid %s\n", yytext);
 				yyterminate();

@@ -25,7 +25,7 @@ struct vfsmount *mount_local(char *path)
 {
 	int retval;
 	struct nameidata nd;
-	struct vfsmount *mnt = ERR_PTR(-EINVAL);
+	struct vfsmount *mnt = ERR_PTR(-ENOENT);
 
 	retval = path_lookup(path, LOOKUP_FOLLOW, &nd);
 	if (retval)

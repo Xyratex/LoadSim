@@ -3,6 +3,7 @@
 #include <linux/string.h>
 #include <linux/time.h>
 #include <linux/uaccess.h>
+#include <linux/fs.h> /* getname / putname */
 
 #include "env.h"
 #include "kapi.h"
@@ -33,6 +34,7 @@ static void env_destroy(struct simul_env *env)
 int env_create(struct simul_env **env, struct simul_ioctl_cli *data)
 {
 	struct simul_env *ret;
+	char *name;
 	int rc;
 
 	ret = kmalloc(sizeof *ret, GFP_KERNEL);
@@ -42,13 +44,21 @@ int env_create(struct simul_env **env, struct simul_ioctl_cli *data)
 	}
 	memset(ret, 0, sizeof *ret);
 
-	ret->se_name = kstrdup(data->sic_name, GFP_KERNEL);
+	name = getname(data->sic_name);
+	if (name == NULL) {
+		rc = -ENOMEM;
+		goto err;
+	}
+
+	ret->se_name = kstrdup(name, GFP_KERNEL);
+	putname(name);
 	if (ret->se_name == NULL) {
 		err_print("can't alloca memory for env name\n");
 		rc = -ENOMEM;
 		goto err;
 	}
-
+	DPRINT("client %p %s\n", ret->se_name, ret->se_name);
+	
 	ret->se_id = data->sic_id;
 
 	rc = md_cli_init(ret, &data->sic_mnt);

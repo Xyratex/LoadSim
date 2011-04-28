@@ -17,7 +17,7 @@ void yyerror(const char *str);
 	struct ast_node *node;
 }
 
-%token <strval> QSTRING TOK_IP TOK_ID TOK_NID
+%token <strval> QSTRING TOK_IP TOK_ID TOK_NID TOK_INTERNAL_FUNC
 %token <intval> TOK_EXP_STATUS TOK_NUMBER TOK_O_FLAG TOK_REGISTER
 
 %token TOK_UNLINK_CMD TOK_CD_CMD
@@ -162,7 +162,7 @@ procedure:
 		int ret;
 		struct ast_node *proc;
 
-		proc = ast_op_link(yylloc.first_line, $3, $2);
+		proc = ast_op_link(yylloc.first_line, $2, $3);
 		if(proc == NULL)
 			YYABORT;
 
@@ -923,6 +923,13 @@ expression:
 	| logical { $$ = $1; }
 	| tmpname 	{ $$ = $1; }
 	| printf	{ $$ = $1; }
+	| TOK_INTERNAL_FUNC
+		{
+		$$ = ast_op_internal(yylloc.first_line, $1);
+		free($1);
+		if ($$ == NULL)
+			YYABORT;
+		}
 	;
 
 math:
@@ -998,7 +1005,6 @@ logical:
 			YYABORT;
 	}
 	;
-        
 
 var:
 	TOK_REGISTER '=' expression
@@ -1067,7 +1073,7 @@ arg_list:
 	expression
 	| arg_list ',' expression
 	{
-		$$ = ast_op_link(yylloc.first_line, $1, $3);
+		$$ = ast_op_link(yylloc.first_line, $3, $1);
 		if ($$ == NULL)
 			YYABORT;
 	}

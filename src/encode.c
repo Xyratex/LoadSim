@@ -188,6 +188,37 @@ out1:
 	return NULL;
 }
 
+struct int_func {
+	const char 	  *if_name;
+	enum ast_type	  if_type;
+	enum vm_sys_calls if_call;
+} funcs[] = {
+	{"cli_name", AST_STRING, VM_SYS_CLI_NAME},
+	{"pid",      AST_NUMBER, VM_SYS_CLI_PID},
+	{NULL, 0}
+};
+
+struct ast_node *ast_op_internal(int line, char *name)
+{
+	union cmd_arg arg;
+	struct ast_node *ret;
+	int i = 0;
+
+	arg.cd_call = 0;
+	while (funcs[i].if_name != NULL) {
+		if (strncasecmp(funcs[i].if_name, name,
+				strlen(funcs[i].if_name)) == 0) {
+			arg.cd_call = funcs[i].if_call;
+			break;
+		}
+		i++;
+	}
+	if (arg.cd_call == 0)
+		return NULL;
+	return ast_op(line, VM_CMD_CALL, arg, funcs[i].if_type, 0);
+}
+
+
 struct ast_node *ast_op_while_end(int line)
 {
 	struct ast_node *cmd1, *cmd2;

@@ -3,17 +3,17 @@
 #include "stack.h"
 #include "kdebug.h"
 
-struct fifo {
+struct stack {
 	int ff_size;
 	int ff_top;
 	long ff_data[0];
 };
 
-struct fifo *fifo_create(int size)
+struct stack *fifo_create(int size)
 {
-	struct fifo *f;
+	struct stack *f;
 
-	f = kmalloc(sizeof(struct fifo) + size *sizeof(void *), GFP_KERNEL);
+	f = kmalloc(sizeof(struct stack) + size *sizeof(void *), GFP_KERNEL);
 	if (f == NULL){
 		err_print("can't alloc memory for fifo\n");
 		return NULL;
@@ -26,9 +26,9 @@ struct fifo *fifo_create(int size)
 }
 
 /**
- destroy fifo structure
+ destroy stack structure
  */
-void fifo_destroy(struct fifo *fifo)
+void fifo_destroy(struct stack *fifo)
 {
 	if (fifo->ff_top != 0) {
 		err_print("leak\n");
@@ -38,10 +38,10 @@ void fifo_destroy(struct fifo *fifo)
 }
 
 
-int stack_push(struct fifo *f, long data)
+int stack_push(struct stack *f, long data)
 {
 	if (f->ff_top == f->ff_size) {
-		err_print("not free space in fifo for push\n");
+		err_print("not free space in stack for push\n");
 		return -ENOMEM;
 	}
 
@@ -51,7 +51,7 @@ int stack_push(struct fifo *f, long data)
 	return 0;
 }
 
-int stack_pop(struct fifo *f, long *data)
+int stack_pop(struct stack *f, long *data)
 {
 	if (f->ff_top == 0) {
 		err_print("fifo empty for pop\n");
@@ -65,7 +65,15 @@ int stack_pop(struct fifo *f, long *data)
 }
 
 
-int stack_size(struct fifo *f)
+int stack_size(struct stack *f)
 {
 	return f->ff_top;
+}
+
+void stack_dump(struct stack *f)
+{
+	int i;
+
+	for(i = 0; i < f->ff_top; i++)
+		printk("stack %d - %lx\n", i, f->ff_data[i]);
 }

@@ -142,6 +142,14 @@ enum vm_sys_calls {
 	 printf like
 	 */
 	VM_SYS_PRINTF   = 5,
+	/**
+	 return a client name
+	*/
+	VM_SYS_CLI_NAME = 6,
+	/**
+	 return a process pid
+	 */
+	VM_SYS_CLI_PID  = 7,
 	VM_SYS_CALL_MAX
 };
 

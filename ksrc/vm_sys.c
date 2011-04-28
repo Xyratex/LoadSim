@@ -9,13 +9,14 @@
 #include "compat.h"
 #include "kdebug.h"
 #include "stack.h"
+#include "env.h"
 #include "vm_defs.h"
 #include "vm_api.h"
 
 /**
  VM_SYS_USER
 */
-static int sys_call_user(struct simul_env *env, struct fifo *f, uint32_t *ip)
+static int sys_call_user(struct simul_env *env, struct stack *f, uint32_t *ip)
 {
 	long uid;
 	struct cred *cred;
@@ -35,7 +36,7 @@ static int sys_call_user(struct simul_env *env, struct fifo *f, uint32_t *ip)
 /**
  VM_SYS_GROUP
 */
-static int sys_call_group(struct simul_env *env, struct fifo *f, uint32_t *ip)
+static int sys_call_group(struct simul_env *env, struct stack *f, uint32_t *ip)
 {
 	long gid;
 	struct cred *cred;
@@ -53,7 +54,7 @@ static int sys_call_group(struct simul_env *env, struct fifo *f, uint32_t *ip)
 	return 0;
 }
 
-static int sys_call_sleep(struct simul_env *env, struct fifo *f, uint32_t *ip)
+static int sys_call_sleep(struct simul_env *env, struct stack *f, uint32_t *ip)
 {
 	long time;
 
@@ -72,7 +73,7 @@ struct _vm_race {
 
 struct _vm_race vm_race[VM_MAX_RACES];
 
-static int sys_call_race(struct simul_env *env, struct fifo *f, uint32_t *ip)
+static int sys_call_race(struct simul_env *env, struct stack *f, uint32_t *ip)
 {
 	long raceid;
 
@@ -93,7 +94,7 @@ static int sys_call_race(struct simul_env *env, struct fifo *f, uint32_t *ip)
 	return 0;
 }
 
-static int sys_call_tmpname(struct simul_env *env, struct fifo *f, uint32_t *ip)
+static int sys_call_tmpname(struct simul_env *env, struct stack *f, uint32_t *ip)
 {
 	char *dst;
 	char *prefix;
@@ -121,7 +122,7 @@ static int sys_call_tmpname(struct simul_env *env, struct fifo *f, uint32_t *ip)
 }
 
 #define pbuf_enough(l)	((ptr + (l) - print_buff) < VM_STRING_SZ)
-static int sys_call_printf(struct simul_env *env, struct fifo *f, uint32_t *ip)
+static int sys_call_printf(struct simul_env *env, struct stack *f, uint32_t *ip)
 {
 	char *format;
 	char *print_buff;
@@ -138,6 +139,8 @@ static int sys_call_printf(struct simul_env *env, struct fifo *f, uint32_t *ip)
 	print_buff[VM_STRING_SZ] = '\0';
 	ptr = print_buff;
 	DPRINT("format %s\n", format);
+	STACK_DUMP(f);
+
 	while(*format != '\0') {
 		if (*format != '%') {
 			*ptr = *format;
@@ -153,7 +156,7 @@ static int sys_call_printf(struct simul_env *env, struct fifo *f, uint32_t *ip)
 				rc = -ENODATA;
 				break;
 			}
-
+			DPRINT("%%s - %p\n", data);
 			len = snprintf(ptr, 0, "%s", data);
 			if (!pbuf_enough(len)) {
 				rc = -EOVERFLOW;
@@ -208,6 +211,23 @@ next_ch:
 		return stack_push(f, (long)print_buff);
 }
 
+static int sys_call_cli_name(struct simul_env *env, struct stack *f, uint32_t *ip)
+{
+	char *ret;
+
+	ret = env->se_name;
+	DPRINT("syscall cli_name %p %s\n", ret, ret);
+	return stack_push(f, (long)ret);
+}
+
+static int sys_call_cli_pid(struct simul_env *env, struct stack *f, uint32_t *ip)
+{
+	long ret;
+
+	ret = current->pid;
+	return stack_push(f, ret);
+}
+
 struct handler_reg sys_hld[] = {
     {.hr_id = VM_SYS_USER, .hr_func = sys_call_user },
     {.hr_id = VM_SYS_GROUP, .hr_func = sys_call_group },
@@ -215,6 +235,8 @@ struct handler_reg sys_hld[] = {
     {.hr_id = VM_SYS_RACE, .hr_func = sys_call_race },
     {.hr_id = VM_SYS_TMPNAME, .hr_func = sys_call_tmpname },
     {.hr_id = VM_SYS_PRINTF, .hr_func = sys_call_printf },
+    {.hr_id = VM_SYS_CLI_NAME, .hr_func = sys_call_cli_name },
+    {.hr_id = VM_SYS_CLI_PID, .hr_func = sys_call_cli_pid },
 };
 
 int sys_handlers_register()

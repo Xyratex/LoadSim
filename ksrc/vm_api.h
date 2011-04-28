@@ -4,7 +4,7 @@
 #include <linux/types.h>
 #include <linux/time.h>
 
-struct fifo;
+struct stack;
 struct simul_env;
 struct reg_file;
 
@@ -16,7 +16,7 @@ struct reg_file;
  \return 0 if function is executed ok, non zero return code has indicate
   fatal error
  */
-typedef int (*vm_func)(struct simul_env *env, struct fifo *fifo, uint32_t *IP);
+typedef int (*vm_func)(struct simul_env *env, struct stack *stack, uint32_t *IP);
 
 
 struct handler_reg {
@@ -50,7 +50,7 @@ struct stack_vm {
 	char		*sv_program;
 	int		sv_size;
 	int32_t		sv_ip;
-	struct fifo	*sv_stack;
+	struct stack	*sv_stack;
 	struct reg_file	*sv_reg;
 	struct simul_env *sv_env;
 	long		sv_run:1;

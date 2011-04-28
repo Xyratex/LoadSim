@@ -1,5 +1,5 @@
 AC_PREREQ([2.59])
-AC_INIT([loadsim], [0.2], [lustre@clusterstor.com])
+AC_INIT([loadsim], [0.3], [lustre@clusterstor.com])
 AC_CONFIG_HEADER([loadsim_c.h])
 
 AH_TEMPLATE([PACKAGE], [Package name.])

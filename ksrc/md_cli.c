@@ -69,7 +69,7 @@ int md_cli_prerun(struct simul_env *env)
 	lookup name and update current directory pointer in
 	env.
 */
-static int md_call_cd(struct simul_env *env, struct fifo *f, uint32_t *ip)
+static int md_call_cd(struct simul_env *env, struct stack *f, uint32_t *ip)
 {
 	long ret;
 	char *dirname;
@@ -86,7 +86,7 @@ static int md_call_cd(struct simul_env *env, struct fifo *f, uint32_t *ip)
 /**
 	long VM_CALL_MKDIR(char *)
 */
-static int md_call_mkdir(struct simul_env *env, struct fifo *f, uint32_t *ip)
+static int md_call_mkdir(struct simul_env *env, struct stack *f, uint32_t *ip)
 {
 	long ret;
 	char *dirname;
@@ -107,7 +107,7 @@ static int md_call_mkdir(struct simul_env *env, struct fifo *f, uint32_t *ip)
 	long VM_CALL_READIR(char *)
 	get all directory pages from a md server
 */
-static int md_call_readdir(struct simul_env *env, struct fifo *f, uint32_t *ip)
+static int md_call_readdir(struct simul_env *env, struct stack *f, uint32_t *ip)
 {
 	long ret;
 	char *dirname;
@@ -123,7 +123,7 @@ static int md_call_readdir(struct simul_env *env, struct fifo *f, uint32_t *ip)
 /**
 	long VM_CALL_UNLINK(char *);
 */
-static int md_call_unlink(struct simul_env *env, struct fifo *f, uint32_t *ip)
+static int md_call_unlink(struct simul_env *env, struct stack *f, uint32_t *ip)
 {
 	long ret;
 	char *name;
@@ -139,7 +139,7 @@ static int md_call_unlink(struct simul_env *env, struct fifo *f, uint32_t *ip)
 /**
 	long VM_CALL_OPEN(char *name, flag, ret);
 */
-static int md_call_open(struct simul_env *env, struct fifo *f, uint32_t *ip)
+static int md_call_open(struct simul_env *env, struct stack *f, uint32_t *ip)
 {
 	long ret;
 	char *name;
@@ -164,7 +164,7 @@ static int md_call_open(struct simul_env *env, struct fifo *f, uint32_t *ip)
 /**
 	VM_CALL_CLOSE
 */
-static int md_call_close(struct simul_env *env, struct fifo *f, uint32_t *ip)
+static int md_call_close(struct simul_env *env, struct stack *f, uint32_t *ip)
 {
 	long ret;
 	long reg;
@@ -180,7 +180,7 @@ static int md_call_close(struct simul_env *env, struct fifo *f, uint32_t *ip)
 /**
 	VM_CALL_STAT
 */
-static int md_call_stat(struct simul_env *env, struct fifo *f, uint32_t *ip)
+static int md_call_stat(struct simul_env *env, struct stack *f, uint32_t *ip)
 {
 	long ret;
 	char *name;
@@ -196,7 +196,7 @@ static int md_call_stat(struct simul_env *env, struct fifo *f, uint32_t *ip)
 /**
 	VM_CALL_CHMOD
 */
-static int md_call_chmod(struct simul_env *env, struct fifo *f, uint32_t *ip)
+static int md_call_chmod(struct simul_env *env, struct stack *f, uint32_t *ip)
 {
 	long ret;
 	char *name;
@@ -215,7 +215,7 @@ static int md_call_chmod(struct simul_env *env, struct fifo *f, uint32_t *ip)
 /**
 	VM_CALL_CHOWN
 */
-static int md_call_chown(struct simul_env *env, struct fifo *f, uint32_t *ip)
+static int md_call_chown(struct simul_env *env, struct stack *f, uint32_t *ip)
 {
 	long ret;
 	char *name;
@@ -237,7 +237,7 @@ static int md_call_chown(struct simul_env *env, struct fifo *f, uint32_t *ip)
 /**
 	VM_CALL_CHTIME
 */
-static int md_call_chtime(struct simul_env *env, struct fifo *f, uint32_t *ip)
+static int md_call_chtime(struct simul_env *env, struct stack *f, uint32_t *ip)
 {
 	long ret;
 	char *name;
@@ -256,7 +256,7 @@ static int md_call_chtime(struct simul_env *env, struct fifo *f, uint32_t *ip)
 /**
 	VM_CALL_TRUNCATE
 */
-static int md_call_truncate(struct simul_env *env, struct fifo *f, uint32_t *ip)
+static int md_call_truncate(struct simul_env *env, struct stack *f, uint32_t *ip)
 {
 	long ret;
 	char *name;
@@ -275,7 +275,7 @@ static int md_call_truncate(struct simul_env *env, struct fifo *f, uint32_t *ip)
 /**
 	VM_CALL_SOFTLINK
 */
-static int md_call_softlink(struct simul_env *env, struct fifo *f, uint32_t *ip)
+static int md_call_softlink(struct simul_env *env, struct stack *f, uint32_t *ip)
 {
 	long ret;
 	char *name;
@@ -294,7 +294,7 @@ static int md_call_softlink(struct simul_env *env, struct fifo *f, uint32_t *ip)
 /**
 	VM_CALL_HARDLINK
 */
-static int md_call_hardlink(struct simul_env *env, struct fifo *f, uint32_t *ip)
+static int md_call_hardlink(struct simul_env *env, struct stack *f, uint32_t *ip)
 {
 	long ret;
 	char *name;
@@ -313,7 +313,7 @@ static int md_call_hardlink(struct simul_env *env, struct fifo *f, uint32_t *ip)
 /**
 	VM_CALL_READLINK
 */
-static int md_call_readlink(struct simul_env *env, struct fifo *f, uint32_t *ip)
+static int md_call_readlink(struct simul_env *env, struct stack *f, uint32_t *ip)
 {
 	long ret;
 	char *name;
@@ -329,7 +329,7 @@ static int md_call_readlink(struct simul_env *env, struct fifo *f, uint32_t *ip)
 /**
 	VM_CALL_RENAME
 */
-static int md_call_rename(struct simul_env *env, struct fifo *f, uint32_t *ip)
+static int md_call_rename(struct simul_env *env, struct stack *f, uint32_t *ip)
 {
 	long ret;
 	char *name;

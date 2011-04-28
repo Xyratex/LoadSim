@@ -1,7 +1,7 @@
 #ifndef _MDSIM_FIFO_
 #define _MDSIM_FIFO_
 
-struct fifo;
+struct stack;
 
 
 /**
@@ -11,28 +11,33 @@ struct fifo;
  \retval NULL - don't have memory for new structure.
  \retval !NULL - FIFO object.
  */
-struct fifo *fifo_create(int size);
+struct stack *fifo_create(int size);
 
 /**
  destroy FIFO structure
  */
-void fifo_destroy(struct fifo *fifo);
+void fifo_destroy(struct stack *fifo);
 
 /**
  push element into stack.
  
  */
-int stack_push(struct fifo *f, long data);
+int stack_push(struct stack *f, long data);
 
 /**
  get element from top of the stack.
  
  */
-int stack_pop(struct fifo *f, long *data);
+int stack_pop(struct stack *f, long *data);
 
 /**
  return current stack size
  */
-int stack_size(struct fifo *f);
+int stack_size(struct stack *f);
+
+/**
+ debug stack dump
+ */
+void stack_dump(struct stack *f);
 
 #endif

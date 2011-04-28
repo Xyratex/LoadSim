@@ -13,7 +13,7 @@
 int vm_interpret_init(struct stack_vm **vm, int stack_size,
 		      char __user *prg, int size, int regs, struct simul_env *env)
 {
-	struct fifo *stack;
+	struct stack *stack;
 	char *program;
 	struct stack_vm *v;
 	struct reg_file *r;
