@@ -7,7 +7,7 @@ else
     	KDIR      := @LINUX_OBJ@
     	PWD       := $(shell cd @srcdir@; pwd)
     	ROOT	  := $(shell cd @top_srcdir@; pwd)
-    	EXTRA_CF  := @KCC@ -I $(ROOT)/include -I $(PWD) -I $(ROOT)
+    	EXTRA_CF  := @KCC@ -I $(ROOT)/include -I $(PWD)/include -I $(ROOT)
 all:
 	$(MAKE) -C $(KDIR) SUBDIRS=$(PWD) EXTRA_CFLAGS="$(EXTRA_CF)" modules 
 

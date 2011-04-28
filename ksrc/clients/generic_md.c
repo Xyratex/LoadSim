@@ -10,8 +10,8 @@
 
 #include "kdebug.h"
 #include "compat.h"
-#include "clients/client.h"
-#include "clients/md_cli_priv.h"
+#include "client.h"
+#include "md_cli_priv.h"
 
 int generic_cli_create(struct md_private **lp)
 {

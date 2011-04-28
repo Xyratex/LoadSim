@@ -12,8 +12,8 @@
 #include "kdebug.h"
 #include "kapi.h"
 #include "compat.h"
-#include "clients/client.h"
-#include "clients/md_cli_priv.h"
+#include "client.h"
+#include "md_cli_priv.h"
 
 
 static int local_cli_destroy(struct md_private *lp)
