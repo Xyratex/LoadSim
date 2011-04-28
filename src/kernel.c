@@ -63,7 +63,7 @@ int simul_api_wait_finished()
 			rc = -errno;
 			break;
 		}
-		if ((rc > 0) && (_poll.revents & POLLIN)) {
+		if ((rc > 0) && (_poll.revents & POLLHUP)) {
 			rc = 0;
 			break;
 		}

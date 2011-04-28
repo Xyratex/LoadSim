@@ -172,7 +172,7 @@ static unsigned int simul_poll (struct file * file, poll_table * wait)
 	poll_wait(file, &clients_wait, wait);
 	if (atomic_read(&clients_run) == 0) {
 		finish_time = CURRENT_TIME;
-		mask |= POLLIN | POLLRDNORM;
+		mask |= POLLHUP;
 	}
 
 	DPRINT("poll cli %d - %u\n", atomic_read(&clients_run), mask);
