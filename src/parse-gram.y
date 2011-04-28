@@ -959,7 +959,7 @@ math:
 		ret += ast_check_type($3, AST_NUMBER);
 		if (ret == 2) {
 			arg.cd_long = 0;
-			call = ast_op(yylloc.first_line, VM_CMD_SUB, arg, AST_NUMBER, 2, $3, $1);
+			call = ast_op(yylloc.first_line, VM_CMD_SUB, arg, AST_NUMBER, 2, $1, $3);
 		}
 		if (call == NULL)
 			YYABORT;
