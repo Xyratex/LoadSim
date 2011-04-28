@@ -26,7 +26,7 @@ struct timespec finish_time;
 
 static atomic_t clients_run = ATOMIC_INIT(0);
 
-static DECLARE_WAIT_QUEUE_HEAD(clients_wait);
+DECLARE_WAIT_QUEUE_HEAD(poll_waiting);
 
 enum sim_state {
 	SIM_SETUP,
@@ -56,7 +56,7 @@ static int client_thread(void *d)
 	env_run(env);
 
 	atomic_dec(&clients_run);
-	wake_up(&clients_wait);
+	wake_up(&poll_waiting);
 
 	return 0;
 }
@@ -152,6 +152,15 @@ static int simul_ioctl(struct inode *inode, struct file *file,
 	return rc;
 }
 
+ssize_t simul_read(struct file *f, char __user *buf, size_t len, loff_t *offset)
+{
+	int rc  = 0;
+	int size = 0;
+	
+	
+	return rc < 0 ? rc : size;
+}
+
 int simul_open(struct inode *inode, struct file *file)
 {
 	return !try_module_get(THIS_MODULE);
@@ -159,7 +168,6 @@ int simul_open(struct inode *inode, struct file *file)
 
 int simul_release(struct inode *inode, struct file *file)
 {
-
 	clients_destroy();
 	module_put(THIS_MODULE);
 	return 0;
@@ -169,12 +177,16 @@ static unsigned int simul_poll (struct file * file, poll_table * wait)
 {
 	unsigned int mask = 0;
 
-	poll_wait(file, &clients_wait, wait);
+	poll_wait(file, &poll_waiting, wait);
 	if (atomic_read(&clients_run) == 0) {
 		finish_time = CURRENT_TIME;
 		mask |= POLLHUP;
 	}
-
+#if 0
+	if (histroy_size() > 0) {
+		mask |= POLLIN;
+	}
+#endif
 	DPRINT("poll cli %d - %u\n", atomic_read(&clients_run), mask);
 	return mask;
 }
@@ -183,6 +195,7 @@ static unsigned int simul_poll (struct file * file, poll_table * wait)
 static struct file_operations fops = {
 	.owner	= THIS_MODULE,
 	.open	= simul_open,
+	.read   = simul_read, 
 	.release = simul_release,
 	.ioctl	= simul_ioctl,
 	.poll	= simul_poll,

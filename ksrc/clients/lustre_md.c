@@ -85,6 +85,8 @@ static int lustre_cli_create(struct md_private **cli, const void __user *data)
 		goto error;
 	}
 
+	ret->lp_root = dget(ret->lp_mnt->mnt_sb->s_root);
+
 	*cli = ret;
 	rc = 0;
 	ret = NULL;

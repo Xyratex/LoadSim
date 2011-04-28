@@ -7,6 +7,7 @@ enum {
 
 struct md_private {
 	struct vfsmount		*lp_mnt;
+	struct dentry		*lp_root;
 	struct file		**lp_open;
 };
 

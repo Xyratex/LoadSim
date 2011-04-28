@@ -21,20 +21,19 @@ static int local_cli_destroy(struct md_private *lp)
 	return generic_cli_destroy(lp);
 }
 
-struct vfsmount *mount_local(char *path)
+int mount_local(char *path, struct vfsmount **mnt, struct dentry **dent)
 {
 	int retval;
 	struct nameidata nd;
-	struct vfsmount *mnt = ERR_PTR(-ENOENT);
 
 	retval = path_lookup(path, LOOKUP_FOLLOW, &nd);
 	if (retval)
-		return ERR_PTR(retval);
-	if (sim_nd_dentry(nd) == sim_nd_mnt(nd)->mnt_root)
-		mnt = mntget(sim_nd_mnt(nd));
+		return retval;
+	*mnt = mntget(sim_nd_mnt(nd));
+	*dent = dget(sim_nd_dentry(nd));
 	sim_path_put(&nd);
 
-	return mnt;
+	return 0;
 }
 
 static int local_cli_create(struct md_private **cli, const void __user *private)
@@ -52,10 +51,10 @@ static int local_cli_create(struct md_private **cli, const void __user *private)
 	if (rc < 0)
 		return rc;
 
-	ret->lp_mnt = mount_local(opt);
-	if (IS_ERR(ret->lp_mnt)) {
-		rc = PTR_ERR(ret->lp_mnt);
+	rc = mount_local(opt, &ret->lp_mnt, &ret->lp_root);
+	if (rc < 0) {
 		ret->lp_mnt = NULL;
+		ret->lp_root = NULL;
 		goto error;
 	}
 

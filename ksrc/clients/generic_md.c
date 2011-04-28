@@ -48,6 +48,9 @@ int generic_cli_destroy(struct md_private *lp)
 		/* XXX close all files */
 		kfree(lp->lp_open);
 	}
+	
+	if (lp->lp_root) 
+		dput(lp->lp_root);
 
 	if (lp->lp_mnt) {
 		DPRINT("mntput \n");
@@ -68,12 +71,12 @@ int generic_cli_prerun(struct md_private *cli)
 	old_fs = *current->fs;
 	
 	sim_fs_pwdmnt(current->fs) = mntget(cli->lp_mnt);
-	sim_fs_pwd(current->fs) = dget(cli->lp_mnt->mnt_sb->s_root);
+	sim_fs_pwd(current->fs) = dget(cli->lp_root);
 	sim_fs_rootmnt(current->fs) = mntget(cli->lp_mnt);
-	sim_fs_root(current->fs) = dget(cli->lp_mnt->mnt_sb->s_root);
+	sim_fs_root(current->fs) = dget(cli->lp_root);
 #ifdef HAVE_VFS_ALTROOT
 	current->fs->altrootmnt = mntget(cli->lp_mnt);
-	current->fs->altroot = dget(cli->lp_mnt->mnt_sb->s_root);
+	current->fs->altroot = dget(cli->lp_root);
 #endif
 	write_unlock(&current->fs->lock);
 
