@@ -9,7 +9,7 @@
 #include "vm_api.h"
 #include "stack.h"
 #include "stats.h"
-#include "clients/client.h"
+#include "client.h"
 
 #define MD_CALL(env, cmd, fnname, arg...)	\
 		({						\
