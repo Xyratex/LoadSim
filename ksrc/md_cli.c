@@ -21,6 +21,7 @@
 			else					\
 				rc = env->u.se_md->fnname(env->se_data, ##arg); \
 			diff = timespec_sub(CURRENT_TIME, start);	\
+			atomic_inc(&env->opr_counter);	\
 			stat_time_update(&env->se_stat_t[cmd - VM_MD_CALL_CD], &diff); \
 			rc;					\
 		})

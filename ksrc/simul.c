@@ -9,12 +9,24 @@
 #include <linux/vmalloc.h>
 #include <linux/errno.h>
 #include <asm/atomic.h>
+#include <linux/mutex.h>    /* used mutex for traversing through linked list */
+#include <linux/proc_fs.h>  /* contains  procfs structures and APIs */
+#include <linux/seq_file.h> /* for seq file interface */
 
 #include "kapi.h"
 #include "kdebug.h"
 #include "vm_defs.h" /* register / unregister */
 #include "vm_api.h"
 #include "env.h"
+
+#define DIRNAME "ldsim"
+#define FILENAME "report_interval"
+
+static struct proc_dir_entry *stat;
+static struct proc_dir_entry *ldsim;
+extern struct list_head clients;
+static DEFINE_MUTEX(env_mtx);
+static unsigned total_opr;
 
 struct inode;
 
@@ -36,6 +48,53 @@ enum sim_state {
 
 static enum sim_state state = SIM_SETUP;
 static DECLARE_WAIT_QUEUE_HEAD(clients_run_waitq);
+
+
+static void *ldsim_start(struct seq_file *seq, loff_t *pos)
+{
+    mutex_lock(&env_mtx);
+    return seq_list_start(&clients, *pos);
+}
+
+static void *ldsim_next(struct seq_file *seq, void *v, loff_t *pos)
+{
+    return seq_list_next(v, &clients, pos);
+}
+
+static void ldsim_stop(struct seq_file *seq, void *v)
+{
+	seq_printf(seq, "total of %u clients: %u\n", atomic_read(&clients_cnt), total_opr);
+    mutex_unlock(&env_mtx);
+}
+
+static int ldsim_show(struct seq_file *seq, void *v)
+{
+    struct simul_env *pos = list_entry(v, struct simul_env, se_link);
+
+    seq_printf(seq, "%s    %u\n", pos->se_name, atomic_read(&pos->opr_counter));
+	total_opr += atomic_read(&pos->opr_counter);
+    atomic_set(&pos->opr_counter, 0);
+    return 0;
+}
+static struct seq_operations ldsim_ops = {
+    .start  = ldsim_start,
+    .next   = ldsim_next,
+    .stop   = ldsim_stop,
+    .show   = ldsim_show,
+};
+
+static int ldsim_open(struct inode *inode, struct file *file)
+{
+    return seq_open(file, &ldsim_ops);
+}
+
+static const struct file_operations proc_fileops = {
+    .owner  = THIS_MODULE,
+    .open   = ldsim_open,
+    .read   = seq_read,
+    .llseek = seq_lseek,
+    .release= seq_release,
+};
 
 static int client_thread(void *d)
 {
@@ -220,6 +279,19 @@ simul_mod_init(void)
 	sys_handlers_register();
 	md_handlers_register();
 
+	ldsim = proc_mkdir(DIRNAME, NULL);
+    if (ldsim == NULL)
+    {
+        remove_proc_entry(DIRNAME, NULL);
+        return -ENOMEM;
+    }
+	stat = proc_create(FILENAME, 0666, ldsim, &proc_fileops);
+    if (stat == NULL)
+    {
+        remove_proc_entry(FILENAME, ldsim);
+        remove_proc_entry(DIRNAME, NULL);
+        return -ENOMEM;
+    }
 	return 0;
 }
 
@@ -233,6 +305,9 @@ simul_mod_cleanup(void)
 	md_handlers_unregister();
 	
 	env_destroy_all();
+
+	remove_proc_entry(FILENAME, ldsim);
+	remove_proc_entry(DIRNAME, NULL);
 }
 MODULE_LICENSE("GPL v2");
 module_init(simul_mod_init);
