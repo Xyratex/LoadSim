@@ -63,7 +63,11 @@ static void *ldsim_next(struct seq_file *seq, void *v, loff_t *pos)
 
 static void ldsim_stop(struct seq_file *seq, void *v)
 {
+	struct timespec delta;
+	struct timespec interval_time = CURRENT_TIME;
+	delta = timespec_sub(interval_time, start_time);
 	seq_printf(seq, "total of %u clients: %u\n", atomic_read(&clients_cnt), total_opr);
+	seq_printf(seq, "time: %lldms\n", (timespec_to_ns(&delta) / NSEC_PER_MSEC));
     mutex_unlock(&env_mtx);
 }
 
