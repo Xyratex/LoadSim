@@ -14,6 +14,7 @@ struct md_private;
  environment for tests
  
  */
+
 struct simul_env {
 	/**
 	 link into global clients list
@@ -41,6 +42,10 @@ struct simul_env {
 
 	uint32_t		se_stat_tn; /** << number of stats */
 	struct op_time_stat	*se_stat_t;
+	/**
+  	 count of client ops per arbitrary interval.
+	*/
+	atomic_t opr_counter;
 };
 
 /**
