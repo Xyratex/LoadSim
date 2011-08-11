@@ -13,7 +13,7 @@
 #include "md_cli.h"
 #include "stats.h"
 
-static LIST_HEAD(clients);
+LIST_HEAD(clients);
 
 static void env_destroy(struct simul_env *env)
 {
