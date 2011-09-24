@@ -195,7 +195,6 @@ int generic_cli_unlink(struct md_private *cli, const char *name)
 		if (child->d_inode != NULL) {
 			if (S_ISDIR(child->d_inode->i_mode)) {
 				retval = vfs_rmdir(sim_nd_dentry(nd)->d_inode, child);
-				dput(child);
 			} else {
 				retval = vfs_unlink(sim_nd_dentry(nd)->d_inode, child);
 				if (!retval && !(child->d_flags & DCACHE_NFSFS_RENAMED))
@@ -204,6 +203,8 @@ int generic_cli_unlink(struct md_private *cli, const char *name)
 		} else {
 			retval = -ENOENT;
 		}
+
+		dput(child);
 	}
 	mutex_unlock(&sim_nd_dentry(nd)->d_inode->i_mutex);
 
