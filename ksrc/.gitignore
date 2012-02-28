@@ -3,3 +3,5 @@
 .tmp_versions
 Module.*
 *mod.c
+/modules.order
+/sim.ko.unsigned

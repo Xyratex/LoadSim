@@ -1,7 +1,10 @@
+/* -*- mode: c; c-basic-offset: 8; indent-tabs-mode: nil; -*-
+ * vim:expandtab:shiftwidth=8:tabstop=8:
+ */
+#define _GNU_SOURCE
 #include "stdio.h"
 #include "stdlib.h"
 #include "errno.h"
-#define _GNU_SOURCE
 #include "getopt.h"
 
 #include "md_client.h"
@@ -10,6 +13,14 @@
 #include "kernel.h"
 
 #include "xml/ezxml.h"
+
+static char const usage_text[] =
+"mdsim usage info\n\n"
+"-h | --help print that help\n"
+"-c | --config <name> use <name> as test configuration file, "
+        "use stdin if not specified\n"
+"-l | --log <name> if specificed store xml output at that file, "
+        "use stdout if not specified\n\n";
 
 uint32_t ncli;
 uint64_t total_time;
@@ -121,15 +132,16 @@ void client_stats(char *name)
 
 void usage(void)
 {
-	fprintf(stderr, "mdsim usage info \n");
-	fprintf(stderr, "\n");
-	fprintf(stderr, "-h | --help print that help\n");	
-	fprintf(stderr, "-c | --config <name> use <name> as test configuration file, use stdin if not specified\n");
-	fprintf(stderr, "-l | --log <name> if specificed store xml output at that file, use stdout if not specified \n");
-	fprintf(stderr, "\n");	
+        fwrite(usage_text, sizeof(usage_text) - 1, 1, stderr);
 }
 
-extern FILE *yyin;
+static void
+fs_err(char const * what, char const * which)
+{
+        fprintf(stderr, "mdsim fs error %d (%s) with %s on %s\n",
+                errno, strerror(errno), what, which);
+        exit(EXIT_FAILURE);
+}
 
 int main(int argc, char *argv[])
 {
@@ -141,14 +153,10 @@ int main(int argc, char *argv[])
 		{0, 0, 0, 0}
 	};
 	int c;
-	int rc;
 	char *log = NULL;
 
-	rc = simul_api_open();
-	if (rc < 0) {
-		err_print("can't open kernel interface\n");
-		return 1;
-	}
+	if (simul_api_open() < 0)
+                fs_err("open", "kernel interface /dev/"SIMUL_DEV_NAME);
 
 	while (1) {
 		option_index = -1;
@@ -158,36 +166,35 @@ int main(int argc, char *argv[])
 			break;
 
 		if ((option_index == 0) || (c == 'c')) {
+                        extern FILE * yyin;
 			yyin = fopen(optarg, "r");
 			if (yyin == NULL) {
-				rc = errno;
+				int rc = errno;
 				fprintf(stderr, "can't open config file. "
 					"rc = %d\n", rc);
-				exit(1);
+				exit(EXIT_FAILURE);
 			}
 		} else if ((option_index == 1) || (c == 'l')) {
 			log = strdup(optarg);
 		} else if ((option_index == 2) || (c == 'h')) {
 		        usage();
-		        exit(0);
+		        exit(EXIT_SUCCESS);
 		} else {
 			fprintf(stderr, "unknow opt \n");
 			exit(2);
 		}
 	}
 
-	rc = yyparse();
-	if (rc) {
+	if (yyparse() != 0) {
 		err_print("can't parse config\n");
-		return 1;
+		return EXIT_FAILURE;
 	}
 
 	simul_api_run();
 	simul_api_wait_finished();
 
 	clients_get_stats();
-	rc = simul_api_system_get_results(&ncli, &total_time);
-	if (rc < 0) {
+	if (simul_api_system_get_results(&ncli, &total_time) < 0) {
 		err_print("can't get system stats\n");
 		ncli = 0;
 		total_time = 0;
@@ -199,4 +206,5 @@ int main(int argc, char *argv[])
 	client_stats(log);
 	if (log)
 		free(log);
+        return EXIT_SUCCESS;
 }
